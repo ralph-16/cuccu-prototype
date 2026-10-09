@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { History, Search } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { Panel, TableShell } from '@/components/owner/widgets'
 import { peso } from '@/lib/mock-data'
 import type { OrderRow } from '@/lib/supabase/queries'
@@ -30,16 +30,6 @@ export function HistoryTable({ orders }: { orders: OrderRow[] }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-start gap-2.5">
-        <span className="mt-0.5 grid size-9 place-items-center rounded-lg bg-olive-900 text-cream-50">
-          <History className="size-5" aria-hidden="true" />
-        </span>
-        <div>
-          <h1 className="text-[26px] leading-8 font-bold text-olive-950">History</h1>
-          <p className="text-sm text-stone-500">Orders taken this shift.</p>
-        </div>
-      </div>
-
       <div className="flex flex-wrap items-center gap-2.5">
         <div className="relative min-w-44 flex-1 sm:max-w-xs">
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-stone-400" aria-hidden="true" />

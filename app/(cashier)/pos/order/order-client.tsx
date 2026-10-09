@@ -87,16 +87,6 @@ export function OrderClient({ menu }: { menu: PosMenuItem[] }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-start gap-2.5">
-        <span className="mt-0.5 grid size-9 place-items-center rounded-lg bg-olive-900 text-cream-50">
-          <CupSoda className="size-5" aria-hidden="true" />
-        </span>
-        <div>
-          <h1 className="text-[26px] leading-8 font-bold text-olive-950">Order</h1>
-          <p className="text-sm text-stone-500">Take a customer order. Cash only.</p>
-        </div>
-      </div>
-
       <div className="flex flex-wrap items-center gap-2.5">
         <div className="relative min-w-52 flex-1">
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-stone-400" aria-hidden="true" />

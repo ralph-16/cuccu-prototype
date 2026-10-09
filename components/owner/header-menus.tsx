@@ -67,7 +67,7 @@ function useDismiss(onClose: () => void) {
   return ref;
 }
 
-function Notifications({ initial }: { initial: Notice[] }) {
+export function Notifications({ initial }: { initial: Notice[] }) {
   const [open, setOpen] = useState(false);
   const [notices, setNotices] = useState<Notice[]>(initial);
   const [read, setRead] = useState<string[]>([]);

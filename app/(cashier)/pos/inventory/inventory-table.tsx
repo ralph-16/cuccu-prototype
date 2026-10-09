@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Package, Search, TriangleAlert } from 'lucide-react'
+import { Search, TriangleAlert } from 'lucide-react'
 import { Panel, StockBadge, TableShell } from '@/components/owner/widgets'
 
 export interface StockRow {
@@ -30,16 +30,6 @@ export function InventoryTable({ rows }: { rows: StockRow[] }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-start gap-2.5">
-        <span className="mt-0.5 grid size-9 place-items-center rounded-lg bg-olive-900 text-cream-50">
-          <Package className="size-5" aria-hidden="true" />
-        </span>
-        <div>
-          <h1 className="text-[26px] leading-8 font-bold text-olive-950">Inventory</h1>
-          <p className="text-sm text-stone-500">Check what&apos;s available before taking orders. Read-only.</p>
-        </div>
-      </div>
-
       {lowCount > 0 ? (
         <p role="status" className="flex items-center gap-2 rounded-2xl bg-yellow-100 px-4 py-2.5 text-sm font-semibold text-yellow-900">
           <TriangleAlert className="size-4 shrink-0" aria-hidden="true" />

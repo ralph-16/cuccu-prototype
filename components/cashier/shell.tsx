@@ -43,8 +43,8 @@ function useDismiss(onClose: () => void) {
   return ref;
 }
 
-/** Owner-style account dropdown: identity + sign out. */
-function CashierAccount({ user, dark = false, drop = 'down' }: { user: ShellUser; dark?: boolean; drop?: 'up' | 'down' }) {
+/** Owner-style account dropdown: identity + sign out. Exported for page headers. */
+export function CashierAccount({ user, dark = false, drop = 'down' }: { user: ShellUser; dark?: boolean; drop?: 'up' | 'down' }) {
   const [open, setOpen] = useState(false);
   const ref = useDismiss(() => setOpen(false));
   const roleLabel = user.role === "owner" ? "Owner" : "Cashier";
