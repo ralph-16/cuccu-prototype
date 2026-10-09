@@ -17,7 +17,7 @@ function priceRange(p: MenuProduct) {
 
 function MenuCard({ item, onOpen }: { item: MenuProduct; onOpen: () => void }) {
   return (
-    <article className="flex gap-3 rounded-2xl border border-olive-900/10 bg-white p-3 shadow-[0_2px_8px_rgba(46,51,29,0.06)]">
+    <article className="flex h-full gap-3 rounded-2xl border border-olive-900/10 bg-white p-3 shadow-[0_2px_8px_rgba(46,51,29,0.06)]">
       <button
         type="button"
         onClick={onOpen}
@@ -235,7 +235,7 @@ export function MenuClient({ items }: { items: MenuProduct[] }) {
           No menu items match “{query}”. Try a different search or category.
         </Panel>
       ) : (
-        <div className="grid grid-cols-1 gap-3.5 md:grid-cols-2 2xl:grid-cols-3">
+        <div className="grid grid-cols-1 items-stretch gap-3.5 md:grid-cols-2 2xl:grid-cols-3">
           {filtered.map((m) => (
             <MenuCard key={m.id} item={m} onOpen={() => setOpenId(m.id)} />
           ))}

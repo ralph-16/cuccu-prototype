@@ -133,12 +133,12 @@ export function OrderClient({ menu }: { menu: PosMenuItem[] }) {
           {filtered.length === 0 ? (
             <Panel className="p-10 text-center text-sm text-stone-500">No menu items match the current search.</Panel>
           ) : (
-            <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+            <div className="grid grid-cols-1 items-stretch gap-3.5 sm:grid-cols-2">
               {filtered.map((m) => (
                 <article
                   key={m.id}
                   className={cn(
-                    'flex gap-3 rounded-2xl border border-olive-900/10 bg-white p-3 shadow-[0_2px_8px_rgba(46,51,29,0.06)]',
+                    'flex h-full gap-3 rounded-2xl border border-olive-900/10 bg-white p-3 shadow-[0_2px_8px_rgba(46,51,29,0.06)]',
                     !m.inStock && 'opacity-70'
                   )}
                 >
