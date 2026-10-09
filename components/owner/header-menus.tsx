@@ -182,7 +182,7 @@ function Account({ user }: { user: HeaderUser }) {
         <div
           role="menu"
           aria-label="Account"
-          className="absolute top-full right-0 z-50 mt-2 w-64 overflow-hidden rounded-2xl border border-olive-900/15 bg-cream-50 shadow-[0_8px_30px_rgba(46,51,29,0.25)]"
+          className="absolute top-full right-0 z-50 mt-2 w-64 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-olive-900/15 bg-cream-50 shadow-[0_8px_30px_rgba(46,51,29,0.25)]"
         >
           <div className="flex items-center gap-3 border-b border-olive-900/10 bg-white px-4 py-3">
             <span className="grid size-10 shrink-0 place-items-center rounded-full bg-olive-600 text-sm font-bold text-cream-50" aria-hidden="true">

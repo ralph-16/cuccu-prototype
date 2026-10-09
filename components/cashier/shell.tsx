@@ -79,8 +79,8 @@ export function CashierAccount({ user, dark = false, drop = 'down' }: { user: Sh
           role="menu"
           aria-label="Account"
           className={cn(
-            "absolute left-0 z-50 w-64 overflow-hidden rounded-2xl border border-olive-900/15 bg-cream-50 shadow-[0_8px_30px_rgba(46,51,29,0.25)]",
-            drop === 'up' ? "bottom-full mb-2" : "top-full mt-2"
+            "absolute z-50 w-64 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-olive-900/15 bg-cream-50 shadow-[0_8px_30px_rgba(46,51,29,0.25)]",
+            drop === 'up' ? "bottom-full left-0 mb-2" : "top-full right-0 mt-2"
           )}
         >
           <div className="flex items-center gap-3 border-b border-olive-900/10 bg-white px-4 py-3">
