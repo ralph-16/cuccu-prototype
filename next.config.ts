@@ -1,9 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
-  cacheComponents: true,
-  partialPrefetching: true,
+  /* Every route in this POS requires auth + live Supabase data per request,
+     so static prerendering (cacheComponents) provides no value and only
+     breaks authenticated pages — keep classic dynamic rendering. */
   turbopack: {
     rules: {
       "*.css": {
