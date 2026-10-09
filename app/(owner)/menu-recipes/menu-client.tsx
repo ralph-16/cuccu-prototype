@@ -235,7 +235,7 @@ export function MenuClient({ items }: { items: MenuProduct[] }) {
           No menu items match “{query}”. Try a different search or category.
         </Panel>
       ) : (
-        <div className="grid grid-cols-1 items-stretch gap-3.5 md:grid-cols-2 2xl:grid-cols-3">
+        <div className="grid grid-cols-1 items-stretch gap-3.5 md:grid-cols-2 2xl:grid-cols-3 lg:max-h-[calc(100dvh-19rem)] lg:overflow-y-auto lg:pr-1">
           {filtered.map((m) => (
             <MenuCard key={m.id} item={m} onOpen={() => setOpenId(m.id)} />
           ))}

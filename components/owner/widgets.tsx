@@ -77,7 +77,6 @@ export function StockBadge({ status }: { status: "In Stock" | "Low Stock" | "Out
 export function RoleBadge({ role }: { role: string }) {
   const styles: Record<string, string> = {
     Owner: "bg-blue-200/70 text-blue-900",
-    Manager: "bg-olive-200/70 text-olive-800",
     Cashier: "bg-cream-200 text-olive-800",
   };
   return (
@@ -102,12 +101,12 @@ export function TableShell({
   empty?: string;
 }) {
   return (
-    <div className="overflow-x-auto rounded-xl border border-olive-900/15">
+    <div className="max-h-[62dvh] overflow-auto rounded-xl border border-olive-900/15">
       <table className="w-full min-w-[640px] border-collapse bg-white text-left text-sm">
         <thead>
-          <tr className="bg-cream-200/70 text-olive-900">
+          <tr className="text-olive-900">
             {headers.map((h) => (
-              <th key={h} scope="col" className="px-4 py-2.5 font-semibold first:rounded-tl-xl last:rounded-tr-xl">
+              <th key={h} scope="col" className="sticky top-0 z-10 bg-cream-200 px-4 py-2.5 font-semibold first:rounded-tl-xl last:rounded-tr-xl">
                 {h}
               </th>
             ))}

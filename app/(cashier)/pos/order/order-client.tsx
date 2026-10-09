@@ -133,7 +133,7 @@ export function OrderClient({ menu }: { menu: PosMenuItem[] }) {
           {filtered.length === 0 ? (
             <Panel className="p-10 text-center text-sm text-stone-500">No menu items match the current search.</Panel>
           ) : (
-            <div className="grid grid-cols-1 items-stretch gap-3.5 sm:grid-cols-2">
+            <div className="grid grid-cols-1 items-stretch gap-3.5 sm:grid-cols-2 lg:max-h-[calc(100dvh-19rem)] lg:overflow-y-auto lg:pr-1">
               {filtered.map((m) => (
                 <article
                   key={m.id}
