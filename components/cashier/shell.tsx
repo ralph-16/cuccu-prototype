@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CupSoda, History, LogOut, Package } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ChevronDown, CupSoda, History, LogOut, Package } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { signOut } from "@/lib/auth/actions";
 import { RoleBadge } from "@/components/owner/widgets";
@@ -23,9 +24,99 @@ function shellInitials(name: string) {
   return (parts.join("") || "•").toUpperCase();
 }
 
+function useDismiss(onClose: () => void) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    function onPointer(e: PointerEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    document.addEventListener("pointerdown", onPointer);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onPointer);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [onClose]);
+  return ref;
+}
+
+/** Owner-style account dropdown: identity + sign out. */
+function CashierAccount({ user, dark = false, drop = 'down' }: { user: ShellUser; dark?: boolean; drop?: 'up' | 'down' }) {
+  const [open, setOpen] = useState(false);
+  const ref = useDismiss(() => setOpen(false));
+  const roleLabel = user.role === "owner" ? "Owner" : "Cashier";
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        className={cn(
+          "flex cursor-pointer items-center gap-2 rounded-full px-2 py-1.5 text-sm font-bold transition-colors focus-visible:ring-2 focus-visible:outline-none",
+          dark
+            ? "text-cream-50 hover:bg-olive-950/30 focus-visible:ring-cream-50"
+            : "text-olive-950 hover:bg-olive-100 focus-visible:ring-olive-600"
+        )}
+      >
+        <span
+          className="grid size-8 shrink-0 place-items-center rounded-full text-xs font-bold"
+          style={{ backgroundColor: dark ? "#f7f3e3" : "#556030", color: dark ? "#3f4a1f" : "#f7f3e3" }}
+          aria-hidden="true"
+        >
+          {shellInitials(user.fullName)}
+        </span>
+        <span className="max-w-28 truncate">{user.fullName}</span>
+        <ChevronDown className={cn("size-4 transition-transform", open && "rotate-180")} aria-hidden="true" />
+      </button>
+
+      {open ? (
+        <div
+          role="menu"
+          aria-label="Account"
+          className={cn(
+            "absolute left-0 z-50 w-64 overflow-hidden rounded-2xl border border-olive-900/15 bg-cream-50 shadow-[0_8px_30px_rgba(46,51,29,0.25)]",
+            drop === 'up' ? "bottom-full mb-2" : "top-full mt-2"
+          )}
+        >
+          <div className="flex items-center gap-3 border-b border-olive-900/10 bg-white px-4 py-3">
+            <span className="grid size-10 shrink-0 place-items-center rounded-full bg-olive-600 text-sm font-bold text-cream-50" aria-hidden="true">
+              {shellInitials(user.fullName)}
+            </span>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-bold text-olive-950">{user.fullName}</p>
+              <div className="mt-1">
+                <RoleBadge role={roleLabel} />
+              </div>
+            </div>
+          </div>
+          <div className="p-1.5">
+            <form action={signOut} className="px-1.5 pb-1.5">
+              {/* No onClick close: unmounting on submit would cancel the action. */}
+              <button
+                type="submit"
+                role="menuitem"
+                className="flex w-full cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-semibold text-red-700 transition-colors hover:bg-red-50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-red-500 focus-visible:outline-none"
+              >
+                <LogOut className="size-4" aria-hidden="true" /> Sign out
+              </button>
+            </form>
+          </div>
+          <p className="border-t border-olive-900/10 bg-cream-100 px-4 py-2 text-center text-[11px] text-stone-400">
+            CucuPos v1.0
+          </p>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function CashierShell({ children, user }: { children: React.ReactNode; user: ShellUser }) {
   const pathname = usePathname();
-  const roleLabel = user.role === "owner" ? "Owner" : "Cashier";
 
   const links = NAV.map(({ href, label, icon: Icon }) => {
     const active = pathname === href;
@@ -64,22 +155,7 @@ export function CashierShell({ children, user }: { children: React.ReactNode; us
           <ul className="flex flex-col gap-1.5">{links}</ul>
         </nav>
         <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-2 rounded-2xl bg-olive-950/40 px-3 py-2">
-            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-cream-50 text-xs font-bold text-olive-800" aria-hidden="true">
-              {shellInitials(user.fullName)}
-            </span>
-            <div className="min-w-0">
-              <p className="truncate text-sm font-bold text-cream-50">{user.fullName}</p>
-              <RoleBadge role={roleLabel} />
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => signOut()}
-            className="flex h-11 cursor-pointer items-center justify-center gap-2 rounded-2xl text-[15px] font-bold text-cream-50 transition-colors hover:bg-olive-950/30 focus-visible:ring-2 focus-visible:ring-cream-50 focus-visible:outline-none"
-          >
-            <LogOut className="size-5" aria-hidden="true" /> Sign out
-          </button>
+          <CashierAccount user={user} dark drop="up" />
           <p className="flex items-center gap-1.5 text-sm font-medium text-cream-50/90">
             <span className="size-1.5 rounded-full bg-green-300" aria-hidden="true" />
             CucuPos v1.0
@@ -89,6 +165,12 @@ export function CashierShell({ children, user }: { children: React.ReactNode; us
 
       <div className="flex min-w-0 flex-1 flex-col gap-3 px-3 pt-3 pb-3 lg:px-0 lg:pt-5 lg:pr-5 lg:pb-5">
         <div className="rounded-2xl bg-olive-500 px-4 pt-4 lg:hidden">
+          <div className="flex items-center justify-between gap-2 pb-1">
+            <span className="text-lg font-bold tracking-tight text-cream-50">
+              Cuccu<span className="text-olive-950">POS</span>
+            </span>
+            <CashierAccount user={user} dark />
+          </div>
           <nav aria-label="Cashier navigation">
             <ul className="flex flex-row gap-1 overflow-x-auto pb-3">{links}</ul>
           </nav>
