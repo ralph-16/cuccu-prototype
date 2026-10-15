@@ -5,12 +5,26 @@ import { History, Plus, Search, TriangleAlert } from 'lucide-react'
 import { Panel, StockBadge, TableShell } from '@/components/owner/widgets'
 import { recordStockIn, type Ingredient } from '@/lib/supabase/queries'
 import { stockStatus } from '@/lib/supabase/stock'
+import {
+  addDemoStockAdjustment,
+  isDemoModeClient,
+  loadDemoStockAdjustments,
+} from '@/lib/demo/client-store'
 import { cn } from '@/lib/utils'
 
 export function InventoryClient({ initial }: { initial: Ingredient[] }) {
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState('All Status')
-  const [rows, setRows] = useState(initial)
+  // Demo mode: re-apply restocks recorded locally (seed comes from the
+  // server; adjustments live in browser-local demo state).
+  const [rows, setRows] = useState<Ingredient[]>(() => {
+    if (!isDemoModeClient()) return initial
+    const adj = loadDemoStockAdjustments()
+    if (Object.keys(adj).length === 0) return initial
+    return initial.map((r) =>
+      adj[r.id] == null ? r : { ...r, stock_quantity: r.stock_quantity + adj[r.id] }
+    )
+  })
   const [restockId, setRestockId] = useState<number | null>(null)
   const [restockQty, setRestockQty] = useState('1')
   const [notice, setNotice] = useState<string | null>(null)
@@ -32,8 +46,26 @@ export function InventoryClient({ initial }: { initial: Ingredient[] }) {
   async function submitRestock(e: React.FormEvent) {
     e.preventDefault()
     if (restockId == null) return
+    const qty = Number(restockQty)
+    if (!Number.isFinite(qty) || qty <= 0) {
+      setNotice('Quantity must be greater than zero.')
+      return
+    }
     setSaving(true)
     setNotice(null)
+    // Demo mode: simulate the append-only ledger entry locally — no backend
+    // write. Applied to the table and persisted for this browser session.
+    if (isDemoModeClient()) {
+      setRows((rs) =>
+        rs.map((r) => (r.id === restockId ? { ...r, stock_quantity: r.stock_quantity + qty } : r))
+      )
+      addDemoStockAdjustment(restockId, qty)
+      setSaving(false)
+      setNotice('Restock recorded (demo — local only).')
+      setRestockId(null)
+      setRestockQty('1')
+      return
+    }
     const { error } = await recordStockIn({
       ingredient_id: restockId,
       quantity: Number(restockQty),

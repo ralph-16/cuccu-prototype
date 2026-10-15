@@ -5,6 +5,7 @@ import { Search } from 'lucide-react'
 import { Panel, TableShell } from '@/components/owner/widgets'
 import { peso } from '@/lib/mock-data'
 import type { OrderRow } from '@/lib/supabase/queries'
+import { isDemoModeClient, mergeDemoOrders } from '@/lib/demo/client-store'
 
 function fmtTime(iso: string) {
   try {
@@ -17,15 +18,20 @@ function fmtTime(iso: string) {
 export function HistoryTable({ orders }: { orders: OrderRow[] }) {
   const [query, setQuery] = useState('')
   const [method, setMethod] = useState('All Methods')
+  // Demo mode: fold in checkouts completed locally this session (seed comes
+  // from the server; extras live in browser-local demo state).
+  const [allOrders] = useState<OrderRow[]>(() =>
+    isDemoModeClient() ? mergeDemoOrders(orders) : orders
+  )
 
   const filtered = useMemo(
     () =>
-      orders.filter(
+      allOrders.filter(
         (o) =>
           (method === 'All Methods' || o.payment_method === method) &&
           String(o.id).includes(query.trim())
       ),
-    [orders, method, query]
+    [allOrders, method, query]
   )
 
   return (

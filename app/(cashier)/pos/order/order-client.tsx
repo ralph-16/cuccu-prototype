@@ -7,6 +7,7 @@ import { CashModal, SuccessModal } from '@/components/cashier/payment-modals'
 import { Panel } from '@/components/owner/widgets'
 import { peso } from '@/lib/mock-data'
 import { createCashOrder } from '@/lib/supabase/queries'
+import { addDemoOrder, getDemoCashierName, isDemoModeClient } from '@/lib/demo/client-store'
 import { cn } from '@/lib/utils'
 
 export interface PosMenuItem {
@@ -64,6 +65,33 @@ export function OrderClient({ menu }: { menu: PosMenuItem[] }) {
   async function completeOrder(cashTendered: number) {
     setPlacing(true)
     setFormError(null)
+
+    // Demo/prototype mode: simulate checkout locally — no backend write, no
+    // real payment. The receipt persists to browser-local demo state and
+    // appears in History.
+    if (isDemoModeClient()) {
+      const itemCount = lines.reduce((s, l) => s + l.qty, 0)
+      try {
+        const row = addDemoOrder({
+          items: itemCount,
+          cashier: getDemoCashierName(),
+          payment_method: 'cash',
+          total,
+        })
+        setLastOrder({
+          no: String(row.id),
+          total,
+          extra: `Cash received ${peso(cashTendered)} · Change ${peso(cashTendered - total)} (demo — no real payment)`,
+        })
+        setCart({})
+        setModal('done')
+      } catch {
+        setFormError('Could not save the demo order.')
+      }
+      setPlacing(false)
+      return
+    }
+
     const { orderId, total: charged, error } = await createCashOrder({
       payment_method: 'cash',
       discount_amount: 0,

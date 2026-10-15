@@ -4,6 +4,12 @@ import { useState } from 'react'
 import { Panel, Sparkline, TableShell } from '@/components/owner/widgets'
 import { peso } from '@/lib/mock-data'
 import { addExpense, type Expense, type OrderRow } from '@/lib/supabase/queries'
+import {
+  addDemoExpense,
+  isDemoModeClient,
+  mergeDemoExpenses,
+  mergeDemoOrders,
+} from '@/lib/demo/client-store'
 
 const inputClass =
   'h-10 w-full rounded-xl border border-olive-900/20 bg-white px-3 text-sm text-olive-950 focus-visible:ring-2 focus-visible:ring-olive-500 focus-visible:outline-none'
@@ -25,7 +31,14 @@ export function SalesExpensesClient({
   orders: OrderRow[]
   initialExpenses: Expense[]
 }) {
-  const [expenses, setExpenses] = useState(initialExpenses)
+  // Demo mode: fold in locally completed checkouts + expense entries so the
+  // log reflects this browser session on top of the server seed.
+  const [expenses, setExpenses] = useState<Expense[]>(() =>
+    isDemoModeClient() ? mergeDemoExpenses(initialExpenses) : initialExpenses
+  )
+  const [ordersState] = useState<OrderRow[]>(() =>
+    isDemoModeClient() ? mergeDemoOrders(orders).slice(0, 30) : orders
+  )
   const [notice, setNotice] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
@@ -44,6 +57,18 @@ export function SalesExpensesClient({
       source: String(formData.get('source') ?? 'Cash on Hand'),
       date_incurred: String(formData.get('date') ?? new Date().toISOString().slice(0, 10)),
       notes: String(formData.get('notes') ?? ''),
+    }
+    // Demo mode: validate + persist locally (no backend write).
+    if (isDemoModeClient()) {
+      if (!payload.description.trim() || !Number.isFinite(payload.amount) || payload.amount <= 0) {
+        setSaving(false)
+        setNotice('Enter a description and an amount greater than zero.')
+        return
+      }
+      setExpenses((es) => [addDemoExpense(payload), ...es])
+      setSaving(false)
+      setNotice('Expense entry saved to the demo log (local only).')
+      return
     }
     const { error } = await addExpense(payload)
     setSaving(false)
@@ -167,7 +192,7 @@ export function SalesExpensesClient({
             <h2 className="text-lg font-bold text-olive-950">Sales Transaction Log</h2>
             <div className="mt-3">
               <TableShell headers={['Order no.', 'Cashier', 'Time', 'Method', 'Total (₱)']}>
-                {orders.map((s) => (
+                {ordersState.map((s) => (
                   <tr key={s.id} className="transition-colors hover:bg-cream-100/70">
                     <td className="px-4 py-2.5 font-semibold">#{s.id}</td>
                     <td className="px-4 py-2.5">{s.cashier}</td>

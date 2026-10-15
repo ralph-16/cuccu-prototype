@@ -10,6 +10,11 @@ import {
   updateStaffProfile,
   type StaffProfile,
 } from "@/lib/supabase/queries";
+import {
+  isDemoModeClient,
+  loadDemoUsers,
+  saveDemoUsers,
+} from "@/lib/demo/client-store";
 import { cn } from "@/lib/utils";
 
 type UIRole = "Owner" | "Cashier";
@@ -236,10 +241,27 @@ function ConfirmModal({ name, onClose, onConfirm }: { name: string; onClose: () 
 export function UsersClient({ initial, selfId }: { initial: StaffProfile[]; selfId: string }) {
   const [query, setQuery] = useState("");
   const [role, setRole] = useState<(typeof FILTERS)[number]>("All Roles");
-  const [rows, setRows] = useState<UIRow[]>(initial.map(toRow));
+  // Demo mode: work on the browser-local roster (seeded from the server)
+  // so add/edit/remove update prototype state with no backend write.
+  const demo = isDemoModeClient();
+  const [rows, setRows] = useState<UIRow[]>(() =>
+    (demo ? loadDemoUsers(initial.map((u) => ({ ...u }))) : initial).map(toRow)
+  );
   const [modal, setModal] = useState<ModalState>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  function persistDemo(next: UIRow[]) {
+    setRows(next);
+    saveDemoUsers(
+      next.map((u) => ({
+        id: u.id,
+        full_name: u.name,
+        role: toDbRole(u.role),
+        is_active: true,
+      }))
+    );
+  }
 
   const visible = useMemo(
     () =>
@@ -264,6 +286,16 @@ export function UsersClient({ initial, selfId }: { initial: StaffProfile[]; self
 
   async function handleAdd(user: NewStaff) {
     if (busy) return;
+    if (demo) {
+      if (rows.some((r) => r.name.toLowerCase() === user.name.toLowerCase())) {
+        setNotice(`${user.name} is already on the roster.`);
+        return;
+      }
+      persistDemo([...rows, { id: `demo-user-${Date.now()}`, name: user.name, role: user.role }]);
+      setModal(null);
+      setNotice(`${user.name} added as ${user.role} (demo — local only).`);
+      return;
+    }
     setBusy(true);
     const { error } = await addStaff({
       email: user.email,
@@ -281,6 +313,22 @@ export function UsersClient({ initial, selfId }: { initial: StaffProfile[]; self
 
   async function handleRemove() {
     if (busy || modal?.kind !== "remove") return;
+    if (demo) {
+      const target = modal.user;
+      if (target.id === selfId) {
+        setNotice("You cannot remove your own account.");
+        return;
+      }
+      const owners = rows.filter((r) => r.role === "Owner").length;
+      if (target.role === "Owner" && owners <= 1) {
+        setNotice("Cannot remove the last active owner.");
+        return;
+      }
+      persistDemo(rows.filter((r) => r.id !== target.id));
+      setModal(null);
+      setNotice(`${target.name} removed (demo — local only).`);
+      return;
+    }
     setBusy(true);
     const { error } = await deactivateStaffProfile(modal.user.id);
     setBusy(false);
@@ -296,6 +344,17 @@ export function UsersClient({ initial, selfId }: { initial: StaffProfile[]; self
     const target = modal.user;
     if (target.id === selfId && toDbRole(updated.role) !== toDbRole(target.role)) {
       setNotice("You cannot change your own role — ask another owner.");
+      return;
+    }
+    if (demo) {
+      const owners = rows.filter((r) => r.role === "Owner").length;
+      if (target.role === "Owner" && updated.role !== "Owner" && owners <= 1) {
+        setNotice("Cannot demote the last active owner.");
+        return;
+      }
+      persistDemo(rows.map((r) => (r.id === target.id ? { ...r, name: updated.name, role: updated.role } : r)));
+      setModal(null);
+      setNotice(`${updated.name}'s details updated (demo — local only).`);
       return;
     }
     setBusy(true);
@@ -407,7 +466,9 @@ export function UsersClient({ initial, selfId }: { initial: StaffProfile[]; self
           </TableShell>
         )}
         <p className="mt-3 text-center text-xs text-stone-400">
-          Removing a user happens in Supabase Dashboard → Authentication (deletes login + profile).
+          {demo
+            ? "Demo mode — roster changes are local only and reset from the login screen."
+            : "Removing a user happens in Supabase Dashboard → Authentication (deletes login + profile)."}
         </p>
       </Panel>
 

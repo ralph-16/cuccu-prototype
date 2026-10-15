@@ -4,6 +4,18 @@ import { createClient } from '@/lib/supabase/server'
 import { getSessionRole } from '@/lib/auth/role'
 import { toUserError } from '@/lib/supabase/errors'
 import { createCashOrderSchema } from '@/lib/validations/order'
+import { isDemoMode } from '@/lib/demo/config'
+import {
+  getDemoExpenses,
+  getDemoIngredients,
+  getDemoMenu,
+  getDemoMenuWithRecipes,
+  getDemoProfiles,
+  getDemoRecentOrders,
+  getDemoSalesSummary,
+  getDemoSalesTrend,
+  getDemoVariantPrice,
+} from '@/lib/demo/data'
 
 export interface MenuVariant {
   id: number
@@ -21,6 +33,8 @@ export interface MenuVariant {
  * no service_role involved.
  */
 export async function getMenu(): Promise<{ data: MenuVariant[] | null; error: string | null }> {
+  // Demo mode: centralized sample menu (see lib/demo/data.ts).
+  if (isDemoMode()) return { data: getDemoMenu(), error: null }
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('product_variants')
@@ -66,6 +80,22 @@ export async function createCashOrder(input: unknown): Promise<{
   const parsed = createCashOrderSchema.safeParse(input)
   if (!parsed.success) {
     return { orderId: null, total: null, error: 'Validation failed.' }
+  }
+
+  // Demo mode: simulate checkout locally — server-side price lookup against
+  // the sample menu, no DB write, no real payment. The client persists the
+  // receipt to browser-local demo state.
+  if (isDemoMode()) {
+    let subtotal = 0
+    for (const i of parsed.data.items) {
+      const unit = getDemoVariantPrice(i.product_variant_id)
+      if (unit == null) {
+        return { orderId: null, total: null, error: 'One or more items are unavailable.' }
+      }
+      subtotal += unit * i.quantity
+    }
+    const total = Math.max(0, subtotal - parsed.data.discount_amount)
+    return { orderId: 5000 + Math.floor(Date.now() % 100000), total, error: null }
   }
 
   const session = await getSessionRole()
@@ -159,6 +189,9 @@ export async function getSalesSummary(
   from?: string,
   to?: string
 ): Promise<{ data: SalesSummary | null; error: string | null }> {
+  // Demo mode: aggregate the shared sample order ledger (reconciles with
+  // every table/chart backed by the same dataset).
+  if (isDemoMode()) return { data: getDemoSalesSummary(from, to), error: null }
   const session = await getSessionRole()
   if (!session) return { data: null, error: 'Not authenticated.' }
   if (session.role !== 'owner') return { data: null, error: 'Owners only.' }
@@ -198,6 +231,7 @@ export interface Ingredient {
 
 /** Ingredients ledger — any authenticated role can read (RLS USING(true)). */
 export async function getIngredients(): Promise<{ data: Ingredient[] | null; error: string | null }> {
+  if (isDemoMode()) return { data: getDemoIngredients(), error: null }
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('ingredients')
@@ -226,6 +260,14 @@ export async function recordStockIn(input: {
   quantity: number
   notes?: string
 }): Promise<{ error: string | null }> {
+  // Demo mode: simulated ledger entry — the client applies it to
+  // browser-local demo state. No real inventory write happens.
+  if (isDemoMode()) {
+    if (!Number.isFinite(input.quantity) || input.quantity <= 0) {
+      return { error: 'Quantity must be greater than zero.' }
+    }
+    return { error: null }
+  }
   const session = await getSessionRole()
   if (!session) return { error: 'Not authenticated.' }
   if (session.role !== 'owner') return { error: 'Owners only.' }
@@ -259,6 +301,7 @@ export interface OrderRow {
 export async function getRecentOrders(
   limit = 50
 ): Promise<{ data: OrderRow[] | null; error: string | null }> {
+  if (isDemoMode()) return { data: getDemoRecentOrders(limit), error: null }
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('orders')
@@ -293,6 +336,7 @@ export async function getRecentOrders(
 
 /** Completed-order totals for the annual trend chart (prototype scale). */
 export async function getSalesTrend(): Promise<{ data: Array<{ month: number; total: number }> | null; error: string | null }> {
+  if (isDemoMode()) return { data: getDemoSalesTrend(), error: null }
   const supabase = await createClient()
   const now = new Date()
   const start = new Date(now.getFullYear(), 0, 1).toISOString()
@@ -321,6 +365,7 @@ export interface StaffProfile {
 
 /** Owner-only roster (RLS "Owners can manage all profiles" enforces). Active staff only. */
 export async function getProfiles(): Promise<{ data: StaffProfile[] | null; error: string | null }> {
+  if (isDemoMode()) return { data: getDemoProfiles(), error: null }
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('profiles')
@@ -344,6 +389,19 @@ export async function updateStaffProfile(
   id: string,
   input: { full_name?: string; role?: 'owner' | 'cashier' }
 ): Promise<{ error: string | null }> {
+  // Demo mode: validated locally; the client persists to browser-local state.
+  if (isDemoMode()) {
+    if (input.full_name !== undefined && !input.full_name.trim()) {
+      return { error: 'Name cannot be empty.' }
+    }
+    if (input.role !== undefined && input.role !== 'owner' && input.role !== 'cashier') {
+      return { error: 'Invalid role.' }
+    }
+    if (input.full_name === undefined && input.role === undefined) {
+      return { error: 'Nothing to update.' }
+    }
+    return { error: null }
+  }
   const session = await getSessionRole()
   if (!session) return { error: 'Not authenticated.' }
   if (session.role !== 'owner') return { error: 'Owners only.' }
@@ -373,6 +431,9 @@ export async function updateStaffProfile(
  *   update public.profiles set is_active = true where id = '…';
  */
 export async function deactivateStaffProfile(id: string): Promise<{ error: string | null }> {
+  // Demo mode: simulated soft-delete; the client updates browser-local
+  // state and enforces the last-owner / self guards against its roster.
+  if (isDemoMode()) return { error: null }
   const session = await getSessionRole()
   if (!session) return { error: 'Not authenticated.' }
   if (session.role !== 'owner') return { error: 'Owners only.' }
@@ -415,6 +476,13 @@ export async function addStaff(input: {
   full_name: string
   role: 'owner' | 'cashier'
 }): Promise<{ error: string | null }> {
+  // Demo mode: validated locally; the client appends to browser-local state.
+  if (isDemoMode()) {
+    if (!input.email.includes('@') || input.password.length < 6 || !input.full_name.trim()) {
+      return { error: 'Enter a valid email, 6+ char password, and name.' }
+    }
+    return { error: null }
+  }
   const session = await getSessionRole()
   if (!session) return { error: 'Not authenticated.' }
   if (session.role !== 'owner') return { error: 'Owners only.' }
@@ -454,6 +522,7 @@ export interface Expense {
 export async function getExpenses(
   limit = 100
 ): Promise<{ data: Expense[] | null; error: string | null }> {
+  if (isDemoMode()) return { data: getDemoExpenses(limit), error: null }
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('expenses')
@@ -488,6 +557,13 @@ export async function addExpense(input: {
   date_incurred: string
   notes?: string
 }): Promise<{ error: string | null }> {
+  // Demo mode: simulated write — the client prepends to browser-local state.
+  if (isDemoMode()) {
+    if (!input.description.trim() || !Number.isFinite(input.amount) || input.amount <= 0) {
+      return { error: 'Enter a description and an amount greater than zero.' }
+    }
+    return { error: null }
+  }
   const session = await getSessionRole()
   if (!session) return { error: 'Not authenticated.' }
   if (session.role !== 'owner') return { error: 'Owners only.' }
@@ -526,6 +602,7 @@ export async function getMenuWithRecipes(): Promise<{
   data: MenuProduct[] | null
   error: string | null
 }> {
+  if (isDemoMode()) return { data: getDemoMenuWithRecipes(), error: null }
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('products')

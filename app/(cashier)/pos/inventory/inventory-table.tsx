@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import { Search, TriangleAlert } from 'lucide-react'
 import { Panel, StockBadge, TableShell } from '@/components/owner/widgets'
+import { isDemoModeClient, loadDemoStockAdjustments } from '@/lib/demo/client-store'
 
 export interface StockRow {
   id: number
@@ -12,21 +13,52 @@ export interface StockRow {
   status: 'In Stock' | 'Low Stock' | 'Out of Stock'
 }
 
+export interface StockRow {
+  id: number
+  name: string
+  stock: number
+  unit: string
+  status: 'In Stock' | 'Low Stock' | 'Out of Stock'
+  reorderAt?: number
+}
+
+function statusFor(stock: number, reorderAt: number): StockRow['status'] {
+  if (stock <= 0) return 'Out of Stock'
+  if (stock <= reorderAt) return 'Low Stock'
+  return 'In Stock'
+}
+
 export function InventoryTable({ rows }: { rows: StockRow[] }) {
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState('All Status')
+  // Demo mode: reflect restocks recorded locally this session on top of the
+  // server seed (browser-local demo state; no backend write happened).
+  const [visible] = useState<StockRow[]>(() => {
+    if (!isDemoModeClient()) return rows
+    const adj = loadDemoStockAdjustments()
+    if (Object.keys(adj).length === 0) return rows
+    return rows.map((r) =>
+      adj[r.id] == null
+        ? r
+        : {
+            ...r,
+            stock: r.stock + adj[r.id],
+            status: r.reorderAt == null ? r.status : statusFor(r.stock + adj[r.id], r.reorderAt),
+          }
+    )
+  })
 
   const filtered = useMemo(
     () =>
-      rows.filter(
+      visible.filter(
         (s) =>
           (status === 'All Status' || s.status === status) &&
           s.name.toLowerCase().includes(query.toLowerCase())
       ),
-    [rows, query, status]
+    [visible, query, status]
   )
 
-  const lowCount = rows.filter((s) => s.status !== 'In Stock').length
+  const lowCount = visible.filter((s) => s.status !== 'In Stock').length
 
   return (
     <div className="flex flex-col gap-4">

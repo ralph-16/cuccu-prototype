@@ -37,6 +37,7 @@ export default async function CashierInventoryPage() {
           stock: i.stock_quantity,
           unit: i.unit,
           status: stockStatus(i),
+          reorderAt: i.reorder_level,
         }))}
       />
     </div>

@@ -5,13 +5,26 @@ import { CheckCheck, PackagePlus, TriangleAlert } from 'lucide-react'
 import { Panel, StockBadge } from '@/components/owner/widgets'
 import { recordStockIn, type Ingredient } from '@/lib/supabase/queries'
 import { stockStatus } from '@/lib/supabase/stock'
+import {
+  addDemoStockAdjustment,
+  isDemoModeClient,
+  loadDemoStockAdjustments,
+} from '@/lib/demo/client-store'
 import { cn } from '@/lib/utils'
 
 export function AlertsClient({ initial }: { initial: Ingredient[] }) {
   const [done, setDone] = useState<number[]>([])
   const [filter, setFilter] = useState('All')
   const [notice, setNotice] = useState<string | null>(null)
-  const [rows, setRows] = useState(initial)
+  // Demo mode: re-apply locally recorded restocks on top of the seed.
+  const [rows, setRows] = useState<Ingredient[]>(() => {
+    if (!isDemoModeClient()) return initial
+    const adj = loadDemoStockAdjustments()
+    if (Object.keys(adj).length === 0) return initial
+    return initial.map((r) =>
+      adj[r.id] == null ? r : { ...r, stock_quantity: r.stock_quantity + adj[r.id] }
+    )
+  })
 
   const alerts = useMemo(
     () =>
@@ -25,6 +38,14 @@ export function AlertsClient({ initial }: { initial: Ingredient[] }) {
 
   async function restock(id: number) {
     setNotice(null)
+    // Demo mode: simulate the ledger entry locally (no backend write).
+    if (isDemoModeClient()) {
+      setDone((d) => (d.includes(id) ? d : [...d, id]))
+      setRows((rs) => rs.map((r) => (r.id === id ? { ...r, stock_quantity: r.stock_quantity + 1 } : r)))
+      addDemoStockAdjustment(id, 1)
+      setNotice('Restock recorded (+1, demo — local only). Adjust the exact amount in Inventory.')
+      return
+    }
     const { error } = await recordStockIn({ ingredient_id: id, quantity: 1, notes: 'Quick restock from alerts' })
     if (error) {
       setNotice(error)
