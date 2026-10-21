@@ -371,7 +371,7 @@ export async function getProfiles(): Promise<{ data: StaffProfile[] | null; erro
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, full_name, role, is_active, email')
+    .select('*')
     .eq('is_active', true)
     .order('full_name')
   if (error) return { data: null, error: toUserError(error) }
@@ -510,12 +510,17 @@ export async function addStaff(input: {
   if (error) return { error: error.message }
   if (!data.user) return { error: 'Could not create user.' }
 
-  // handle_new_user trigger creates the profile; set the intended role + email.
+  // handle_new_user trigger creates the profile; set the intended role + name.
   const { error: roleError } = await supabase
     .from('profiles')
-    .update({ role: input.role, full_name: input.full_name.trim(), email: input.email.trim() })
+    .update({ role: input.role, full_name: input.full_name.trim() })
     .eq('id', data.user.id)
   if (roleError) return { error: toUserError(roleError) }
+
+  // Best-effort: store the email on the profile if the column exists
+  // (migration 004_profile_email.sql). Silently ignored otherwise.
+  await supabase.from('profiles').update({ email: input.email.trim() }).eq('id', data.user.id)
+
   return { error: null }
 }
 

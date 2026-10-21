@@ -19,7 +19,9 @@ export function LoginForm() {
           ? 'Sign-in failed. Please try again.'
           : error === 'disabled'
             ? 'Account disabled or missing profile. Contact an administrator.'
-            : null
+            : error === 'unconfirmed'
+              ? 'Please confirm your email address first (check your inbox), or disable "Confirm email" in Supabase Auth settings.'
+              : null
 
   // Clear any stale demo display session on landing so switching modes never
   // leaks the previous user's name.
