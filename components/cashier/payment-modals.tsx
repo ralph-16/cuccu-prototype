@@ -1,8 +1,9 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BadgeCheck } from "lucide-react";
 import { peso } from "@/lib/mock-data";
+import { startWalletPayment } from "@/lib/paymongo";
 import { isDemoModeClient } from "@/lib/demo/client-store";
 import { cn } from "@/lib/utils";
 
@@ -150,32 +151,77 @@ export function CashModal({ total, onClose, onConfirm }: {
 function WalletBrand({ method }: { method: Exclude<PayMethod, "Cash"> }) {
   if (method === "GCash") {
     return (
-      <span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-white text-2xl font-black text-[#0a7cff] ring-1 ring-olive-900/10" aria-hidden="true">
-        G
-      </span>
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src="/gcash-logo.svg" alt="GCash" className="h-12 w-auto" />
     );
   }
   return (
-    <span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-black text-sm font-bold text-[#00e07a]" aria-hidden="true">
-      maya
-    </span>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src="/maya-logo.svg" alt="Maya" className="h-12 w-auto" />
   );
 }
 
 export function WalletModal({
   total,
   method,
+  items,
   onClose,
-  onProceed,
-  busy,
+  onConfirm,
+  onCancel,
 }: {
   total: number;
   method: Exclude<PayMethod, "Cash">;
+  items: { product_variant_id: number; quantity: number }[];
   onClose: () => void;
-  onProceed: () => void;
-  busy: boolean;
+  onConfirm: (orderId: number | null) => void;
+  onCancel: (orderId: number | null) => void;
 }) {
   const demo = isDemoModeClient();
+  const [state, setState] = useState<
+    | { status: "loading" }
+    | { status: "ready"; orderId: number | null; checkoutUrl: string; qrDataUrl: string | null }
+    | { status: "error"; message: string }
+  >({ status: "loading" });
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const res = await startWalletPayment({
+        payment_method: method.toLowerCase(),
+        items,
+      });
+      if (cancelled) return;
+      if (res.error || !res.checkoutUrl) {
+        setState({ status: "error", message: res.error ?? "Could not start payment." });
+        return;
+      }
+      setState({
+        status: "ready",
+        orderId: res.orderId,
+        checkoutUrl: res.checkoutUrl,
+        qrDataUrl: res.qrDataUrl ?? null,
+      });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [method, items]);
+
+  async function handleConfirm() {
+    const orderId = state.status === "ready" ? state.orderId : null;
+    setBusy(true);
+    await onConfirm(orderId);
+    setBusy(false);
+  }
+
+  async function handleCancel() {
+    const orderId = state.status === "ready" ? state.orderId : null;
+    setBusy(true);
+    await onCancel(orderId);
+    setBusy(false);
+  }
+
   return (
     <ModalShell label={`${method} payment`} onClose={onClose}>
       <div className="flex items-center gap-3">
@@ -183,30 +229,70 @@ export function WalletModal({
         <div>
           <h2 className="text-3xl font-bold text-olive-950">{method} payment</h2>
           <p className="text-stone-600">
-            {demo ? 'Prototype checkout — no real charge.' : "You'll be redirected to PayMongo's secure checkout."}
+            {demo ? "Prototype checkout — scan to pay (no real charge)." : "Scan the QR with your " + method + " app."}
           </p>
         </div>
       </div>
       <Summary total={total} method={method} />
-      <p className="mt-3 rounded-xl bg-cream-100 px-3 py-2 text-center text-[13px] font-semibold text-olive-900">
-        {demo ? 'Demo — order is recorded locally' : 'Secure payment via PayMongo'}
-      </p>
+
+      {state.status === "loading" ? (
+        <div className="mt-4 grid place-items-center rounded-2xl border border-olive-900/15 bg-cream-100 p-8">
+          <p className="text-sm font-semibold text-olive-800">Generating payment QR…</p>
+        </div>
+      ) : state.status === "error" ? (
+        <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">
+          {state.message}
+        </div>
+      ) : (
+        <>
+          <div className="mt-4 grid place-items-center gap-2 rounded-2xl border border-olive-900/15 bg-white p-5">
+            {state.qrDataUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={state.qrDataUrl}
+                alt={`${method} payment QR code`}
+                className="size-[220px] rounded-lg"
+              />
+            ) : (
+              <span className="grid size-[220px] place-items-center rounded-lg bg-cream-100 text-stone-400">
+                QR unavailable
+              </span>
+            )}
+            <p className="text-sm font-bold text-olive-900">{method}</p>
+            <p className="text-center text-xs text-stone-400">
+              Scan with your {method} app · or{" "}
+              <a
+                href={state.checkoutUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-olive-700 underline-offset-2 hover:underline"
+              >
+                open PayMongo checkout
+              </a>
+            </p>
+          </div>
+          <p className="mt-3 rounded-xl bg-cream-100 px-3 py-2 text-center text-[13px] font-semibold text-olive-900">
+            {demo ? "Demo — order recorded locally after you confirm" : "Secure payment via PayMongo"}
+          </p>
+        </>
+      )}
+
       <div className="mt-6 flex justify-center gap-8">
         <button
           type="button"
-          onClick={onClose}
-          disabled={busy}
+          onClick={handleCancel}
+          disabled={busy || state.status === "loading"}
           className="h-11 min-w-36 cursor-pointer rounded-xl border border-olive-800 px-6 font-bold text-olive-900 transition-colors hover:bg-olive-100 focus-visible:ring-2 focus-visible:ring-olive-600 focus-visible:outline-none disabled:opacity-40"
         >
           Cancel
         </button>
         <button
           type="button"
-          onClick={onProceed}
-          disabled={busy}
+          onClick={handleConfirm}
+          disabled={busy || state.status !== "ready"}
           className="h-11 min-w-40 cursor-pointer rounded-xl bg-olive-800 px-6 font-bold text-cream-50 transition-colors hover:bg-olive-900 focus-visible:ring-2 focus-visible:ring-olive-600 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {busy ? 'Processing…' : demo ? 'Confirm (demo)' : 'Proceed to PayMongo'}
+          {busy ? "Processing…" : demo ? "Payment received (demo)" : "Payment received"}
         </button>
       </div>
     </ModalShell>

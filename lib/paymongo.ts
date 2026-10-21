@@ -2,6 +2,7 @@
 
 import { headers } from 'next/headers'
 import { z } from 'zod'
+import QRCode from 'qrcode'
 import { createClient } from '@/lib/supabase/server'
 import { getSessionRole } from '@/lib/auth/role'
 import { isDemoMode } from '@/lib/demo/config'
@@ -28,6 +29,7 @@ const walletSchema = z.object({
 export async function startWalletPayment(input: unknown): Promise<{
   orderId: number | null
   checkoutUrl: string | null
+  qrDataUrl?: string | null
   error: string | null
 }> {
   const parsed = walletSchema.safeParse(input)
@@ -108,7 +110,7 @@ export async function startWalletPayment(input: unknown): Promise<{
   const cancelUrl = `${origin}/pos/order/paymongo-return?order_id=${orderId}&status=cancel`
 
   const amountCentavos = Math.round(total * 100)
-  const pmTypes = parsed.data.payment_method === 'gcash' ? ['gcash'] : ['maya']
+  const pmTypes = parsed.data.payment_method === 'gcash' ? ['gcash'] : ['paymaya']
 
   const res = await fetch('https://api.paymongo.com/v1/checkout_sessions', {
     method: 'POST',
@@ -144,7 +146,13 @@ export async function startWalletPayment(input: unknown): Promise<{
   const json = (await res.json()) as { data?: { attributes?: { checkout_url?: string } } }
   const checkoutUrl = json?.data?.attributes?.checkout_url
   if (!checkoutUrl) return { orderId, checkoutUrl: null, error: 'No checkout URL returned by PayMongo.' }
-  return { orderId, checkoutUrl, error: null }
+  let qrDataUrl: string | null = null
+  try {
+    qrDataUrl = await QRCode.toDataURL(checkoutUrl, { width: 220, margin: 1, color: { dark: '#000000', light: '#FFFFFF' } })
+  } catch {
+    qrDataUrl = null
+  }
+  return { orderId, checkoutUrl, qrDataUrl, error: null }
 }
 
 /** Marks a pending wallet order as completed (fires the inventory-deduction trigger). */

@@ -7,7 +7,7 @@ import { CashModal, SuccessModal, WalletModal, type PayMethod } from '@/componen
 import { Panel } from '@/components/owner/widgets'
 import { peso } from '@/lib/mock-data'
 import { createCashOrder } from '@/lib/supabase/queries'
-import { startWalletPayment } from '@/lib/paymongo'
+import { cancelWalletOrder, completeWalletOrder } from '@/lib/paymongo'
 import { addDemoOrder, getDemoCashierName, isDemoModeClient } from '@/lib/demo/client-store'
 import { cn } from '@/lib/utils'
 
@@ -118,24 +118,32 @@ export function OrderClient({ menu }: { menu: PosMenuItem[] }) {
     setModal('done')
   }
 
-  async function handleWalletProceed() {
+  async function handleWalletConfirm(orderId: number | null) {
     if (isDemoModeClient()) {
-      await completeOrder(method, `${method} · demo — no real charge`)
-      return
+      const itemCount = lines.reduce((s, l) => s + l.qty, 0)
+      try {
+        addDemoOrder({
+          items: itemCount,
+          cashier: getDemoCashierName(),
+          payment_method: method.toLowerCase(),
+          total,
+        })
+      } catch {
+        // ignore
+      }
+    } else if (orderId != null) {
+      const r = await completeWalletOrder(orderId)
+      if (r.error) setFormError(r.error)
     }
-    setPlacing(true)
-    setFormError(null)
-    const res = await startWalletPayment({
-      payment_method: method.toLowerCase(),
-      items: lines.map((l) => ({ product_variant_id: l.item.id, quantity: l.qty })),
-    })
-    setPlacing(false)
-    if (res.error || !res.checkoutUrl) {
-      setFormError(res.error ?? 'Could not start payment.')
-      return
+    const detail = `${method} · ${isDemoModeClient() ? "demo — no real charge" : "PayMongo payment received"}`
+    await completeOrder(method, detail)
+  }
+
+  async function handleWalletCancel(orderId: number | null) {
+    if (!isDemoModeClient() && orderId != null) {
+      await cancelWalletOrder(orderId)
     }
-    // eslint-disable-next-line react-hooks/immutability
-    window.location.href = res.checkoutUrl
+    setModal(null)
   }
 
   return (
@@ -312,9 +320,10 @@ export function OrderClient({ menu }: { menu: PosMenuItem[] }) {
           <WalletModal
             total={total}
             method={method}
+            items={lines.map((l) => ({ product_variant_id: l.item.id, quantity: l.qty }))}
             onClose={() => setModal(null)}
-            onProceed={handleWalletProceed}
-            busy={placing}
+            onConfirm={handleWalletConfirm}
+            onCancel={handleWalletCancel}
           />
         )
       ) : null}
