@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from "react";
-import { Pencil, Search, Trash2, UserPlus } from "lucide-react";
+import { Mail, MoreVertical, Pencil, Search, ShieldCheck, Trash2, User, UserPlus } from "lucide-react";
 import { Panel, RoleBadge, TableShell } from "@/components/owner/widgets";
 import {
   addStaff,
@@ -21,6 +21,7 @@ type UIRole = "Owner" | "Cashier";
 interface UIRow {
   id: string;
   name: string;
+  email: string;
   role: UIRole;
 }
 
@@ -30,6 +31,7 @@ const ROLES: UIRole[] = ["Owner", "Cashier"];
 const toRow = (u: StaffProfile): UIRow => ({
   id: u.id,
   name: u.full_name,
+  email: u.email ?? "",
   role: u.role === "owner" ? "Owner" : "Cashier",
 });
 const toDbRole = (r: UIRole): "owner" | "cashier" => (r === "Owner" ? "owner" : "cashier");
@@ -60,8 +62,19 @@ function UserModal({
   const [name, setName] = useState(initial.name);
   const [email, setEmail] = useState(initial.email);
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<UIRole>(initial.role);
+  const [confirm, setConfirm] = useState("");
+  const [role, setRole] = useState<UIRole | "">(mode === "add" ? "" : initial.role);
+  const [roleSet, setRoleSet] = useState(mode === "edit");
   const [error, setError] = useState<string | null>(null);
+
+  function confirmRole() {
+    if (!role) {
+      setError("Choose a role first.");
+      return;
+    }
+    setRoleSet(true);
+    setError(null);
+  }
 
   function save() {
     const cleanName = name.trim();
@@ -75,9 +88,17 @@ function UserModal({
         return;
       }
       if (password.length < 6) {
-        setError("Temporary password must be at least 6 characters.");
+        setError("Password must be at least 6 characters.");
         return;
       }
+      if (password !== confirm) {
+        setError("Passwords do not match.");
+        return;
+      }
+    }
+    if (!role) {
+      setError("Choose a role for this user.");
+      return;
     }
     onSave({ name: cleanName, email: email.trim().toLowerCase(), password, role });
   }
@@ -91,99 +112,150 @@ function UserModal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-3xl bg-cream-50 p-6"
+        className="relative my-auto w-full max-w-2xl rounded-3xl bg-cream-50 p-6 shadow-[0_20px_60px_rgba(20,24,12,0.35)]"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-xl font-bold text-olive-950">{title}</h2>
-        <div className="mt-4 flex flex-col gap-3.5">
-          <div>
-            <label htmlFor="user-name" className="mb-1 block text-[13px] font-semibold text-olive-950">
-              Full Name
-            </label>
-            <input
-              id="user-name"
-              type="text"
-              autoFocus
-              value={name}
-              onChange={(e) => { setName(e.target.value); setError(null); }}
-              placeholder="e.g. Juan Dela Cruz"
-              autoComplete="name"
-              className={inputClass}
-            />
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          className="absolute top-5 right-5 grid size-9 cursor-pointer place-items-center rounded-full bg-cream-100 text-xl leading-none text-stone-500 transition-colors hover:bg-cream-200 hover:text-olive-900 focus-visible:ring-2 focus-visible:ring-olive-600 focus-visible:outline-none"
+        >
+          ×
+        </button>
+
+        <h2 className="flex items-center gap-2.5 text-2xl font-bold text-olive-950">
+          <span className="grid size-8 place-items-center rounded-full bg-olive-100 text-olive-800">
+            <UserPlus className="size-5" aria-hidden="true" />
+          </span>
+          {title}
+        </h2>
+        <div className="mt-4 border-t border-olive-900/15" />
+
+        <div className="mt-4 flex flex-col gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label htmlFor="user-name" className="mb-1 block text-[13px] font-semibold text-olive-950">
+                User Full Name
+              </label>
+              <input
+                id="user-name"
+                type="text"
+                autoFocus
+                value={name}
+                onChange={(e) => { setName(e.target.value); setError(null); }}
+                autoComplete="name"
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label htmlFor="user-email" className="mb-1 block text-[13px] font-semibold text-olive-950">
+                Email Address
+              </label>
+              <input
+                id="user-email"
+                type="email"
+                value={email}
+                disabled={mode === "edit"}
+                onChange={(e) => { setEmail(e.target.value); setError(null); }}
+                autoComplete="email"
+                spellCheck={false}
+                className={cn(inputClass, mode === "edit" && "opacity-60")}
+              />
+            </div>
           </div>
+
           {mode === "add" ? (
-            <>
-              <div>
-                <label htmlFor="user-email" className="mb-1 block text-[13px] font-semibold text-olive-950">
-                  Email
-                </label>
-                <input
-                  id="user-email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => { setEmail(e.target.value); setError(null); }}
-                  placeholder="name@example.com…"
-                  autoComplete="email"
-                  spellCheck={false}
-                  className={inputClass}
-                />
-              </div>
+            <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label htmlFor="user-password" className="mb-1 block text-[13px] font-semibold text-olive-950">
-                  Temporary Password
+                  Create Password
                 </label>
                 <input
                   id="user-password"
                   type="password"
                   value={password}
                   onChange={(e) => { setPassword(e.target.value); setError(null); }}
-                  placeholder="6+ characters"
                   autoComplete="new-password"
                   className={inputClass}
                 />
               </div>
-            </>
+              <div>
+                <label htmlFor="user-confirm" className="mb-1 block text-[13px] font-semibold text-olive-950">
+                  Confirm Password
+                </label>
+                <input
+                  id="user-confirm"
+                  type="password"
+                  value={confirm}
+                  onChange={(e) => { setConfirm(e.target.value); setError(null); }}
+                  autoComplete="new-password"
+                  className={inputClass}
+                />
+              </div>
+            </div>
           ) : (
             <p className="text-xs text-stone-500">
               Email lives in Supabase Auth and can&apos;t change here.
             </p>
           )}
+
           <div>
             <label htmlFor="user-role" className="mb-1 block text-[13px] font-semibold text-olive-950">
               Role
             </label>
-            <select
-              id="user-role"
-              value={role}
-              onChange={(e) => setRole(e.target.value as UIRole)}
-              className={`${inputClass} cursor-pointer`}
-            >
-              {ROLES.map((r) => (
-                <option key={r}>{r}</option>
-              ))}
-            </select>
+            <div className="flex flex-wrap items-center gap-3">
+              <select
+                id="user-role"
+                value={role}
+                onChange={(e) => { setRole(e.target.value as UIRole); setRoleSet(false); setError(null); }}
+                className={cn(inputClass, "w-48 cursor-pointer")}
+              >
+                <option value="" disabled>
+                  Select
+                </option>
+                {ROLES.map((r) => (
+                  <option key={r}>{r}</option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={confirmRole}
+                className="h-11 cursor-pointer rounded-xl bg-olive-800 px-6 text-sm font-bold text-cream-50 transition-colors hover:bg-olive-900 focus-visible:ring-2 focus-visible:ring-olive-600 focus-visible:ring-offset-2 focus-visible:outline-none"
+              >
+                Select
+              </button>
+              {roleSet && role ? (
+                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-olive-800">
+                  <ShieldCheck className="size-4" aria-hidden="true" /> {role} access
+                </span>
+              ) : null}
+            </div>
             <p className="mt-1 text-xs text-stone-500">
               {role === "Owner" && "Full access, including user management."}
               {role === "Cashier" && "Takes orders and views stock. No management access."}
+              {role === "" && "Owners manage everything; cashiers take orders."}
             </p>
           </div>
+
           {error ? (
             <p role="alert" className="text-sm font-semibold text-red-700">{error}</p>
           ) : null}
-          <div className="flex gap-2.5">
+
+          <div className="mt-2 flex justify-center gap-4">
             <button
               type="button"
               onClick={onClose}
-              className="h-11 flex-1 cursor-pointer rounded-xl border border-olive-700 font-bold text-olive-800 transition-colors hover:bg-olive-100 focus-visible:ring-2 focus-visible:ring-olive-600 focus-visible:outline-none"
+              className="h-11 min-w-36 cursor-pointer rounded-xl border border-olive-800 px-6 font-bold text-olive-900 transition-colors hover:bg-olive-100 focus-visible:ring-2 focus-visible:ring-olive-600 focus-visible:outline-none"
             >
               Cancel
             </button>
             <button
               type="button"
               onClick={save}
-              className="h-11 flex-1 cursor-pointer rounded-xl bg-olive-700 font-bold text-cream-50 transition-colors hover:bg-olive-800 focus-visible:ring-2 focus-visible:ring-olive-600 focus-visible:ring-offset-2 focus-visible:outline-none"
+              className="h-11 min-w-36 cursor-pointer rounded-xl bg-olive-800 px-6 font-bold text-cream-50 transition-colors hover:bg-olive-900 focus-visible:ring-2 focus-visible:ring-olive-600 focus-visible:ring-offset-2 focus-visible:outline-none"
             >
-              Save User
+              {mode === "add" ? "Add User" : "Save User"}
             </button>
           </div>
         </div>
@@ -221,7 +293,7 @@ function ConfirmModal({ name, onClose, onConfirm }: { name: string; onClose: () 
             type="button"
             onClick={onClose}
             autoFocus
-            className="h-11 flex-1 cursor-pointer rounded-xl border border-olive-700 font-bold text-olive-800 transition-colors hover:bg-olive-100 focus-visible:ring-2 focus-visible:ring-olive-600 focus-visible:outline-none"
+            className="h-11 flex-1 cursor-pointer rounded-xl border border-olive-800 font-bold text-olive-900 transition-colors hover:bg-olive-100 focus-visible:ring-2 focus-visible:ring-olive-600 focus-visible:outline-none"
           >
             Keep
           </button>
@@ -257,6 +329,7 @@ export function UsersClient({ initial, selfId }: { initial: StaffProfile[]; self
       next.map((u) => ({
         id: u.id,
         full_name: u.name,
+        email: u.email,
         role: toDbRole(u.role),
         is_active: true,
       }))
@@ -268,7 +341,8 @@ export function UsersClient({ initial, selfId }: { initial: StaffProfile[]; self
       rows.filter(
         (u) =>
           (role === "All Roles" || u.role === role) &&
-          u.name.toLowerCase().includes(query.toLowerCase())
+          (u.name.toLowerCase().includes(query.toLowerCase()) ||
+            u.email.toLowerCase().includes(query.toLowerCase()))
       ),
     [query, role, rows]
   );
@@ -291,7 +365,7 @@ export function UsersClient({ initial, selfId }: { initial: StaffProfile[]; self
         setNotice(`${user.name} is already on the roster.`);
         return;
       }
-      persistDemo([...rows, { id: `demo-user-${Date.now()}`, name: user.name, role: user.role }]);
+      persistDemo([...rows, { id: `demo-user-${Date.now()}`, name: user.name, email: user.email, role: user.role }]);
       setModal(null);
       setNotice(`${user.name} added as ${user.role} (demo — local only).`);
       return;
@@ -392,9 +466,9 @@ export function UsersClient({ initial, selfId }: { initial: StaffProfile[]; self
         </div>
         <button
           type="button"
-          className="h-10 cursor-pointer rounded-xl bg-olive-950 px-4 text-sm font-bold text-cream-50 transition-colors hover:bg-olive-900 focus-visible:ring-2 focus-visible:ring-olive-600 focus-visible:ring-offset-2 focus-visible:outline-none"
+          className="inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-xl bg-olive-800 px-4 text-sm font-bold text-cream-50 transition-colors hover:bg-olive-900 focus-visible:ring-2 focus-visible:ring-olive-600 focus-visible:ring-offset-2 focus-visible:outline-none"
         >
-          ⌕ Search
+          <Search className="size-4" aria-hidden="true" /> Search
         </button>
       </div>
 
@@ -419,7 +493,7 @@ export function UsersClient({ initial, selfId }: { initial: StaffProfile[]; self
         <button
           type="button"
           onClick={() => { setNotice(null); setModal({ kind: "add" }); }}
-          className="ml-auto flex h-10 cursor-pointer items-center gap-1.5 rounded-xl bg-olive-950 px-4 text-sm font-bold text-cream-50 transition-colors hover:bg-olive-900 focus-visible:ring-2 focus-visible:ring-olive-600 focus-visible:ring-offset-2 focus-visible:outline-none"
+          className="ml-auto flex h-10 cursor-pointer items-center gap-1.5 rounded-xl bg-olive-800 px-4 text-sm font-bold text-cream-50 transition-colors hover:bg-olive-900 focus-visible:ring-2 focus-visible:ring-olive-600 focus-visible:ring-offset-2 focus-visible:outline-none"
         >
           <UserPlus className="size-4" aria-hidden="true" /> Add User
         </button>
@@ -431,13 +505,34 @@ export function UsersClient({ initial, selfId }: { initial: StaffProfile[]; self
             No users match the current search or role filter.
           </p>
         ) : (
-          <TableShell headers={["User Name", "Role", "Action"]}>
+          <TableShell
+            headers={[
+              <span key="name" className="inline-flex items-center gap-2">
+                <User className="size-4" aria-hidden="true" /> User Name
+              </span>,
+              <span key="email" className="inline-flex items-center gap-2">
+                <Mail className="size-4" aria-hidden="true" /> Email
+              </span>,
+              <span key="role" className="inline-flex items-center gap-2">
+                <ShieldCheck className="size-4" aria-hidden="true" /> Role
+              </span>,
+              <span key="action" className="inline-flex items-center gap-2">
+                <MoreVertical className="size-4" aria-hidden="true" /> Action
+              </span>,
+            ]}
+          >
             {visible.map((u) => (
               <tr key={u.id} className="transition-colors hover:bg-cream-100/70">
-                <td className="px-4 py-2.5 font-semibold whitespace-nowrap text-olive-950">
-                  ○ {u.name}
-                  {u.id === selfId ? <span className="ml-2 text-xs font-medium text-stone-400">(you)</span> : null}
+                <td className="px-4 py-2.5 whitespace-nowrap">
+                  <span className="flex items-center gap-2.5 font-semibold text-olive-950">
+                    <span className="grid size-7 shrink-0 place-items-center rounded-full bg-olive-950 text-cream-50" aria-hidden="true">
+                      <User className="size-4" />
+                    </span>
+                    {u.name}
+                    {u.id === selfId ? <span className="text-xs font-medium text-stone-400">(you)</span> : null}
+                  </span>
                 </td>
+                <td className="px-4 py-2.5 text-olive-900">{u.email || "—"}</td>
                 <td className="px-4 py-2.5">
                   <RoleBadge role={u.role} />
                 </td>
@@ -483,9 +578,9 @@ export function UsersClient({ initial, selfId }: { initial: StaffProfile[]; self
       ) : null}
       {modal?.kind === "edit" ? (
         <UserModal
-          title={`Edit ${modal.user.name}`}
+          title="Edit User"
           mode="edit"
-          initial={{ name: modal.user.name, email: "", role: modal.user.role }}
+          initial={{ name: modal.user.name, email: modal.user.email, role: modal.user.role }}
           onClose={() => setModal(null)}
           onSave={handleEdit}
         />

@@ -3,10 +3,11 @@
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { CupSoda, Minus, Plus, Search, Trash2 } from 'lucide-react'
-import { CashModal, SuccessModal } from '@/components/cashier/payment-modals'
+import { CashModal, SuccessModal, WalletModal, type PayMethod } from '@/components/cashier/payment-modals'
 import { Panel } from '@/components/owner/widgets'
 import { peso } from '@/lib/mock-data'
 import { createCashOrder } from '@/lib/supabase/queries'
+import { startWalletPayment } from '@/lib/paymongo'
 import { addDemoOrder, getDemoCashierName, isDemoModeClient } from '@/lib/demo/client-store'
 import { cn } from '@/lib/utils'
 
@@ -23,10 +24,11 @@ export function OrderClient({ menu }: { menu: PosMenuItem[] }) {
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('All')
   const [cart, setCart] = useState<Record<number, number>>({})
+  const [method, setMethod] = useState<PayMethod>('Cash')
   const [modal, setModal] = useState<'pay' | 'done' | null>(null)
   const [placing, setPlacing] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
-  const [lastOrder, setLastOrder] = useState<{ no: string; total: number; extra: string } | null>(null)
+  const [lastOrder, setLastOrder] = useState<{ no: string; total: number; extra: string; method: PayMethod } | null>(null)
 
   const categories = useMemo(() => ['All', ...Array.from(new Set(menu.map((m) => m.category)))], [menu])
 
@@ -61,10 +63,11 @@ export function OrderClient({ menu }: { menu: PosMenuItem[] }) {
     })
   }
 
-  /** Cash checkout: creates pending order + lines, completes it (fires inventory trigger). */
-  async function completeOrder(cashTendered: number) {
+  /** Checkout: creates a pending order + lines, completes it (fires inventory trigger). */
+  async function completeOrder(payMethod: PayMethod, receiptDetail: string) {
     setPlacing(true)
     setFormError(null)
+    const dbMethod = payMethod.toLowerCase()
 
     // Demo/prototype mode: simulate checkout locally — no backend write, no
     // real payment. The receipt persists to browser-local demo state and
@@ -75,13 +78,14 @@ export function OrderClient({ menu }: { menu: PosMenuItem[] }) {
         const row = addDemoOrder({
           items: itemCount,
           cashier: getDemoCashierName(),
-          payment_method: 'cash',
+          payment_method: dbMethod,
           total,
         })
         setLastOrder({
           no: String(row.id),
           total,
-          extra: `Cash received ${peso(cashTendered)} · Change ${peso(cashTendered - total)} (demo — no real payment)`,
+          method: payMethod,
+          extra: `${receiptDetail} (demo — no real payment)`,
         })
         setCart({})
         setModal('done')
@@ -93,7 +97,7 @@ export function OrderClient({ menu }: { menu: PosMenuItem[] }) {
     }
 
     const { orderId, total: charged, error } = await createCashOrder({
-      payment_method: 'cash',
+      payment_method: dbMethod,
       discount_amount: 0,
       items: lines.map((l) => ({ product_variant_id: l.item.id, quantity: l.qty })),
     })
@@ -107,10 +111,31 @@ export function OrderClient({ menu }: { menu: PosMenuItem[] }) {
     setLastOrder({
       no: String(orderId),
       total: finalTotal,
-      extra: `Cash received ${peso(cashTendered)} · Change ${peso(cashTendered - finalTotal)}`,
+      method: payMethod,
+      extra: receiptDetail,
     })
     setCart({})
     setModal('done')
+  }
+
+  async function handleWalletProceed() {
+    if (isDemoModeClient()) {
+      await completeOrder(method, `${method} · demo — no real charge`)
+      return
+    }
+    setPlacing(true)
+    setFormError(null)
+    const res = await startWalletPayment({
+      payment_method: method.toLowerCase(),
+      items: lines.map((l) => ({ product_variant_id: l.item.id, quantity: l.qty })),
+    })
+    setPlacing(false)
+    if (res.error || !res.checkoutUrl) {
+      setFormError(res.error ?? 'Could not start payment.')
+      return
+    }
+    // eslint-disable-next-line react-hooks/immutability
+    window.location.href = res.checkoutUrl
   }
 
   return (
@@ -240,8 +265,21 @@ export function OrderClient({ menu }: { menu: PosMenuItem[] }) {
             </div>
           </dl>
 
-          <p className="mt-3 rounded-xl bg-cream-100 px-3 py-2 text-center text-[13px] font-semibold text-olive-900">
-            Cash only — wallets disabled
+          <label htmlFor="pay-method" className="mt-3 block text-[13px] font-semibold text-olive-950">
+            Payment Method
+          </label>
+          <select
+            id="pay-method"
+            value={method}
+            onChange={(e) => setMethod(e.target.value as PayMethod)}
+            className="mt-1 h-10 w-full cursor-pointer rounded-xl border border-olive-900/20 bg-white px-3 text-sm font-medium text-olive-950 focus-visible:ring-2 focus-visible:ring-olive-500 focus-visible:outline-none"
+          >
+            {(['Cash', 'GCash', 'Maya'] as PayMethod[]).map((m) => (
+              <option key={m}>{m}</option>
+            ))}
+          </select>
+          <p className="mt-2 rounded-xl bg-cream-100 px-3 py-2 text-center text-[12px] font-semibold text-olive-900">
+            {method === 'Cash' ? 'Cash on hand' : `${method} — QR / number prototype, no live charge`}
           </p>
 
           {formError ? (
@@ -262,13 +300,29 @@ export function OrderClient({ menu }: { menu: PosMenuItem[] }) {
       </div>
 
       {modal === 'pay' ? (
-        <CashModal total={total} onClose={() => setModal(null)} onConfirm={(t) => completeOrder(t)} />
+        method === 'Cash' ? (
+          <CashModal
+            total={total}
+            onClose={() => setModal(null)}
+            onConfirm={(t) =>
+              completeOrder('Cash', `Cash received ${peso(t)} · Change ${peso(t - total)}`)
+            }
+          />
+        ) : (
+          <WalletModal
+            total={total}
+            method={method}
+            onClose={() => setModal(null)}
+            onProceed={handleWalletProceed}
+            busy={placing}
+          />
+        )
       ) : null}
       {modal === 'done' && lastOrder ? (
         <SuccessModal
           orderNo={lastOrder.no}
           total={lastOrder.total}
-          method="Cash"
+          method={lastOrder.method}
           extra={lastOrder.extra}
           onClose={() => { setModal(null); router.push('/pos/history'); }}
           onNew={() => setModal(null)}

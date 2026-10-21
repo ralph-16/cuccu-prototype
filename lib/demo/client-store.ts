@@ -7,12 +7,13 @@
  * production backend. `resetDemoData()` restores the known seed state for
  * repeated demonstrations.
  */
-import type { Expense, OrderRow, StaffProfile } from '@/lib/supabase/queries'
+import type { Expense, MenuProduct, OrderRow, StaffProfile } from '@/lib/supabase/queries'
 
 const ORDERS_KEY = 'cuccu-demo-orders'
 const EXPENSES_KEY = 'cuccu-demo-expenses'
 const STOCK_KEY = 'cuccu-demo-stock'
 const USERS_KEY = 'cuccu-demo-users'
+const MENU_KEY = 'cuccu-demo-menu'
 const SESSION_KEY = 'cuccu-demo-session'
 
 export function isDemoModeClient(): boolean {
@@ -137,11 +138,31 @@ export function saveDemoUsers(rows: StaffProfile[]) {
   write(USERS_KEY, rows)
 }
 
+/* ---------------- menu items ---------------- */
+
+export function loadDemoMenuExtras(): MenuProduct[] {
+  return read<MenuProduct[]>(MENU_KEY, [])
+}
+
+/** Demo extras override seed rows with the same id (edits) and add new ones. */
+export function mergeDemoMenu(seed: MenuProduct[]): MenuProduct[] {
+  const extras = loadDemoMenuExtras()
+  if (extras.length === 0) return seed
+  const overridden = new Set(extras.map((m) => m.id))
+  return [...extras, ...seed.filter((m) => !overridden.has(m.id))]
+}
+
+/** Persists a locally-created or edited menu item (demo — no backend write). */
+export function addDemoMenu(item: MenuProduct) {
+  const rest = loadDemoMenuExtras().filter((m) => m.id !== item.id)
+  write(MENU_KEY, [item, ...rest].slice(0, 100))
+}
+
 /* ---------------- reset ---------------- */
 
 export function resetDemoData() {
   if (typeof window === 'undefined') return
-  for (const k of [ORDERS_KEY, EXPENSES_KEY, STOCK_KEY, USERS_KEY]) {
+  for (const k of [ORDERS_KEY, EXPENSES_KEY, STOCK_KEY, USERS_KEY, MENU_KEY]) {
     try {
       window.localStorage.removeItem(k)
     } catch {

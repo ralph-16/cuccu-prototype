@@ -1,36 +1,62 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CuccuPOS — Café POS & Shop Management
 
-## Getting Started
+A web-based Point-of-Sale and shop-management prototype for a beverage café ("Cuccu"), built as a Software Design course prototype.
 
-First, run the development server:
+- **Cashiers** take and complete orders (cash + GCash/Maya via PayMongo), review history and stock.
+- **Owners/Managers** run the shop: sales dashboard, menu & recipes, inventory, expenses, reports, low-stock alerts, staff & roles.
+
+## Stack
+
+Next.js 16 (App Router) · React 19 · Tailwind CSS 4 · shadcn/Base UI · Supabase (Postgres + Auth + RLS) · Zod · PayMongo Checkout Sessions.
+
+## Getting started
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev   # http://localhost:3000 (demo mode by default)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Other scripts: `npm run build`, `npm run lint`, `npm run start`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Operating modes
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Controlled by `NEXT_PUBLIC_DEMO_MODE` (default ON):
 
-## Learn More
+| | Demo (default) | Live (`NEXT_PUBLIC_DEMO_MODE=false`) |
+|---|---|---|
+| Data | Centralized sample dataset + `localStorage` | Supabase Postgres (RLS-protected) |
+| Auth | One-click pseudo-login via role cookie | Supabase Auth (email/password + OAuth) |
+| Payments | Cash simulated; wallets complete locally (no charge) | Cash recorded in DB; GCash/Maya/QR via PayMongo |
+| Writes | Browser-local only | Real inserts/updates through Server Actions |
 
-To learn more about Next.js, take a look at the following resources:
+Live code, migrations, and RLS policies stay intact so switching is reversible.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Environment
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+`.env.local`:
 
-## Deploy on Vercel
+```
+NEXT_PUBLIC_DEMO_MODE=true            # set "false" for live mode
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...
+PAYMONGO_SECRET_KEY=sk_test_...        # PayMongo test key
+PAYMONGO_PUBLIC_KEY=pk_test_...
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Database (live mode)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Apply the SQL in `supabase/migrations/` in order (001 → 004) to your Supabase project. Migration `004_profile_email.sql` adds an `email` column to `profiles` (backfilled from `auth.users`) used by User/Role Management.
+
+## Payments (PayMongo)
+
+Wallet payments (GCash/Maya) create a `pending` order, open a PayMongo Checkout Session, and redirect the browser to PayMongo's hosted page. On return, `/pos/order/paymongo-return` marks the order `completed` (firing the inventory-deduction trigger) or `cancelled`. Cash payments follow the existing two-step pending → completed flow.
+
+## Key invariants
+
+- Role comes only from `getSessionRole()` (server; JWT-verified `auth.getUser()` + `profiles.role`).
+- Order totals are recomputed server-side from DB prices; `profile_id` is server-set.
+- The two-step order insert (pending → items → completed) is load-bearing for the inventory trigger.
+- `stockStatus()` in `lib/supabase/stock.ts` is the single stock-status rule.
+- Demo and live branches in `lib/supabase/queries.ts` must stay behaviorally in sync.
+
+See `system_summary.md` and `codebase_summary.md` for the full architecture reference.

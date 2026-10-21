@@ -68,9 +68,10 @@ export async function getMenu(): Promise<{ data: MenuVariant[] | null; error: st
 }
 
 /**
- * Creates a cash order + lines, then completes it so the
+ * Creates an order + lines, then completes it so the
  * deduct_inventory_for_completed_order() trigger fires.
  * profile_id is always server-set from the JWT user — never client input.
+ * payment_method defaults to cash; gcash/maya are accepted (prototype UI).
  */
 export async function createCashOrder(input: unknown): Promise<{
   orderId: number | null
@@ -142,7 +143,7 @@ export async function createCashOrder(input: unknown): Promise<{
     .insert({
       profile_id: session.userId,
       order_status: 'pending',
-      payment_method: 'cash',
+      payment_method: parsed.data.payment_method,
       subtotal,
       discount_amount: parsed.data.discount_amount,
       total_amount: total,
@@ -359,6 +360,7 @@ export async function getSalesTrend(): Promise<{ data: Array<{ month: number; to
 export interface StaffProfile {
   id: string
   full_name: string
+  email: string | null
   role: 'owner' | 'cashier'
   is_active: boolean
 }
@@ -369,11 +371,20 @@ export async function getProfiles(): Promise<{ data: StaffProfile[] | null; erro
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, full_name, role, is_active')
+    .select('id, full_name, role, is_active, email')
     .eq('is_active', true)
     .order('full_name')
   if (error) return { data: null, error: toUserError(error) }
-  return { data: (data ?? []) as StaffProfile[], error: null }
+  return {
+    data: ((data ?? []) as Array<Record<string, unknown>>).map((r) => ({
+      id: String(r.id),
+      full_name: String(r.full_name ?? ''),
+      email: (r.email as string | null) ?? null,
+      role: (r.role as 'owner' | 'cashier') ?? 'cashier',
+      is_active: Boolean(r.is_active),
+    })),
+    error: null,
+  }
 }
 
 /** Owner changes a staff member's role. */
@@ -499,10 +510,10 @@ export async function addStaff(input: {
   if (error) return { error: error.message }
   if (!data.user) return { error: 'Could not create user.' }
 
-  // handle_new_user trigger creates the profile; set the intended role.
+  // handle_new_user trigger creates the profile; set the intended role + email.
   const { error: roleError } = await supabase
     .from('profiles')
-    .update({ role: input.role, full_name: input.full_name.trim() })
+    .update({ role: input.role, full_name: input.full_name.trim(), email: input.email.trim() })
     .eq('id', data.user.id)
   if (roleError) return { error: toUserError(roleError) }
   return { error: null }
@@ -593,6 +604,10 @@ export interface MenuProduct {
   description: string | null
   category_name: string
   is_available: boolean
+  /** Optional product photo (data URL in demo mode; none in the DB yet). */
+  image?: string | null
+  /** Ordered preparation steps shown on the Menu & Recipes page. */
+  preparation?: string[]
   variants: Array<{ id: number; variant_name: string; price: number; is_available: boolean }>
   recipe: Array<{ ingredient: string; quantity: number; unit: string }>
 }

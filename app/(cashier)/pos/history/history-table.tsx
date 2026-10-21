@@ -55,8 +55,10 @@ export function HistoryTable({ orders }: { orders: OrderRow[] }) {
           onChange={(e) => setMethod(e.target.value)}
           className="h-11 cursor-pointer rounded-xl border border-olive-900/20 bg-white px-3 text-sm font-medium focus-visible:ring-2 focus-visible:ring-olive-500 focus-visible:outline-none"
         >
-          {['All Methods', 'cash'].map((m) => (
-            <option key={m}>{m}</option>
+          {['All Methods', 'cash', 'gcash', 'maya'].map((m) => (
+            <option key={m} value={m}>
+              {m === 'All Methods' ? m : m.charAt(0).toUpperCase() + m.slice(1)}
+            </option>
           ))}
         </select>
         <p className="ml-auto text-sm font-semibold text-olive-900" role="status">

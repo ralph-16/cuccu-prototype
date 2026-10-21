@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Panel, Sparkline, TableShell } from '@/components/owner/widgets'
 import { peso } from '@/lib/mock-data'
 import { addExpense, type Expense, type OrderRow } from '@/lib/supabase/queries'
@@ -41,6 +41,22 @@ export function SalesExpensesClient({
   )
   const [notice, setNotice] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [payFilter, setPayFilter] = useState('All Methods')
+  const [cashierFilter, setCashierFilter] = useState('All')
+
+  const cashiers = useMemo(
+    () => ['All', ...Array.from(new Set(ordersState.map((o) => o.cashier)))],
+    [ordersState]
+  )
+  const visibleOrders = useMemo(
+    () =>
+      ordersState.filter(
+        (o) =>
+          (payFilter === 'All Methods' || o.payment_method === payFilter) &&
+          (cashierFilter === 'All' || o.cashier === cashierFilter)
+      ),
+    [ordersState, payFilter, cashierFilter]
+  )
 
   const totalExpenses = expenses.reduce((s, e) => s + e.amount, 0)
   const net = gross - totalExpenses
@@ -190,9 +206,44 @@ export function SalesExpensesClient({
         <div className="flex flex-col gap-4">
           <Panel className="flex flex-col p-5">
             <h2 className="text-lg font-bold text-olive-950">Sales Transaction Log</h2>
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <label className="inline-flex items-center gap-1.5 text-sm font-semibold text-olive-900">
+                Pay:
+                <select
+                  value={payFilter}
+                  onChange={(e) => setPayFilter(e.target.value)}
+                  aria-label="Filter by payment method"
+                  className="h-9 cursor-pointer rounded-lg border border-olive-900/20 bg-white px-2 text-sm font-medium text-olive-950 focus-visible:ring-2 focus-visible:ring-olive-500 focus-visible:outline-none"
+                >
+                  {['All Methods', 'cash', 'gcash', 'maya'].map((m) => (
+                    <option key={m} value={m}>
+                      {m === 'All Methods' ? m : m.charAt(0).toUpperCase() + m.slice(1)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="inline-flex items-center gap-1.5 text-sm font-semibold text-olive-900">
+                Cashier:
+                <select
+                  value={cashierFilter}
+                  onChange={(e) => setCashierFilter(e.target.value)}
+                  aria-label="Filter by cashier"
+                  className="h-9 cursor-pointer rounded-lg border border-olive-900/20 bg-white px-2 text-sm font-medium text-olive-950 focus-visible:ring-2 focus-visible:ring-olive-500 focus-visible:outline-none"
+                >
+                  {cashiers.map((c) => (
+                    <option key={c} value={c}>
+                      {c === 'All' ? 'All' : c}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <span className="ml-auto text-xs font-semibold text-stone-500" role="status">
+                {visibleOrders.length} order{visibleOrders.length === 1 ? '' : 's'}
+              </span>
+            </div>
             <div className="mt-3">
               <TableShell headers={['Order no.', 'Cashier', 'Time', 'Method', 'Total (₱)']}>
-                {ordersState.map((s) => (
+                {visibleOrders.map((s) => (
                   <tr key={s.id} className="transition-colors hover:bg-cream-100/70">
                     <td className="px-4 py-2.5 font-semibold">#{s.id}</td>
                     <td className="px-4 py-2.5">{s.cashier}</td>

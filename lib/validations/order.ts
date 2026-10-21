@@ -13,8 +13,9 @@ export const orderLineSchema = z.object({
 })
 
 export const createCashOrderSchema = z.object({
-  // Cash-only while PayMongo is skipped; DB still allows gcash/maya later.
-  payment_method: z.literal('cash'),
+  // Cash is the default; the DB also allows gcash/maya (wallets shown in the
+  // UI as prototype modals). PayMongo processing is still disabled.
+  payment_method: z.enum(['cash', 'gcash', 'maya']).default('cash'),
   discount_amount: z.number().min(0).max(100000).default(0),
   items: z.array(orderLineSchema).min(1).max(50),
 })

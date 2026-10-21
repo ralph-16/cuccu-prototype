@@ -1,8 +1,10 @@
 'use client'
 
 import { useEffect, useState, useTransition } from 'react'
+import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { CupSoda, RotateCcw, ShoppingCart, Store } from 'lucide-react'
+import { RotateCcw, ShoppingCart, Store } from 'lucide-react'
+import { LogoImage } from '@/components/brand/logo'
 import { signIn } from './actions'
 import { demoLogin } from '@/lib/demo/session'
 import { clearDemoSessionClient, resetDemoData, setDemoSessionClient } from '@/lib/demo/client-store'
@@ -52,10 +54,8 @@ export function LoginForm() {
     <div className="grid min-h-dvh place-items-center bg-cream-100 px-4">
       <div className="w-full max-w-sm rounded-2xl bg-white p-7 shadow-[0_4px_24px_rgba(46,51,29,0.12)]">
         <div className="flex flex-col items-center text-center">
-          <span className="grid size-12 place-items-center rounded-full bg-olive-500 font-bold text-cream-50">
-            <CupSoda className="size-7" aria-hidden="true" />
-          </span>
-          <h1 className="mt-4 text-xl font-bold text-olive-950">Sign in to your CuccuPOS account</h1>
+          <LogoImage className="size-16" priority />
+          <h1 className="mt-3 text-xl font-bold text-olive-950">Sign in to your CuccuPOS account</h1>
           {demoMode ? (
             <p className="mt-2 inline-flex items-center rounded-full bg-olive-100 px-3 py-1 text-[11px] font-bold tracking-wide text-olive-800 uppercase">
               Demo / Prototype — sample data, no real transactions
@@ -147,6 +147,11 @@ export function LoginForm() {
 
           <p className="text-center text-xs text-stone-400">
             Cash-only build — PayMongo wallets disabled for now.
+          </p>
+          <p className="text-center text-xs text-stone-400">
+            <Link href="/privacy" className="font-semibold text-olive-700 underline-offset-2 hover:underline">
+              Data privacy &amp; user consent
+            </Link>
           </p>
         </form>
 

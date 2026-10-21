@@ -58,9 +58,9 @@ export function StatusBadge({ status }: { status: "Pending" | "Verified" | "Reje
 
 export function StockBadge({ status }: { status: "In Stock" | "Low Stock" | "Out of Stock" }) {
   const styles = {
-    "In Stock": "bg-olive-100 text-olive-800 ring-olive-500/30",
-    "Low Stock": "bg-yellow-200/70 text-yellow-900 ring-yellow-600/30",
-    "Out of Stock": "bg-red-600/10 text-red-700 ring-red-600/30",
+    "In Stock": "bg-olive-200/70 text-olive-900 ring-olive-500/30",
+    "Low Stock": "bg-yellow-200/80 text-yellow-900 ring-yellow-600/30",
+    "Out of Stock": "bg-red-100 text-red-700 ring-red-500/40",
   } as const;
   return (
     <span
@@ -76,8 +76,8 @@ export function StockBadge({ status }: { status: "In Stock" | "Low Stock" | "Out
 
 export function RoleBadge({ role }: { role: string }) {
   const styles: Record<string, string> = {
-    Owner: "bg-blue-200/70 text-blue-900",
-    Cashier: "bg-cream-200 text-olive-800",
+    Owner: "bg-indigo-200/80 text-indigo-900",
+    Cashier: "bg-olive-200/80 text-olive-900",
   };
   return (
     <span
@@ -96,7 +96,7 @@ export function TableShell({
   children,
   empty,
 }: {
-  headers: string[];
+  headers: ReactNode[];
   children: ReactNode;
   empty?: string;
 }) {
@@ -105,8 +105,8 @@ export function TableShell({
       <table className="w-full min-w-[640px] border-collapse bg-white text-left text-sm">
         <thead>
           <tr className="text-olive-900">
-            {headers.map((h) => (
-              <th key={h} scope="col" className="sticky top-0 z-10 bg-cream-200 px-4 py-2.5 font-semibold first:rounded-tl-xl last:rounded-tr-xl">
+            {headers.map((h, i) => (
+              <th key={i} scope="col" className="sticky top-0 z-10 bg-cream-200 px-4 py-2.5 font-semibold first:rounded-tl-xl last:rounded-tr-xl">
                 {h}
               </th>
             ))}

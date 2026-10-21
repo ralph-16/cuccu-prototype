@@ -113,6 +113,7 @@ interface SeedProduct {
   is_available: boolean
   variants: Array<{ id: number; variant_name: string; price: number; is_available: boolean }>
   recipe: Array<{ ingredient: string; quantity: number; unit: string }>
+  preparation: string[]
 }
 
 const SEED_PRODUCTS: SeedProduct[] = [
@@ -128,6 +129,12 @@ const SEED_PRODUCTS: SeedProduct[] = [
       { ingredient: 'Ice', quantity: 1, unit: 'bags' },
       { ingredient: 'Paper Cups 12oz', quantity: 1, unit: 'pcs' },
     ],
+    preparation: [
+      'Brew a double shot of espresso.',
+      'Fill a 12oz cup with ice.',
+      'Pour the espresso over the ice.',
+      'Stir gently and serve.',
+    ],
   },
   {
     id: 2, name: 'Spanish Latte', category: 'Coffee', is_available: true,
@@ -141,6 +148,12 @@ const SEED_PRODUCTS: SeedProduct[] = [
       { ingredient: 'Condensed Milk', quantity: 0.5, unit: 'cans' },
       { ingredient: 'Fresh Milk', quantity: 0.15, unit: 'L' },
     ],
+    preparation: [
+      'Pull a double shot of espresso.',
+      'Spoon condensed milk into the cup.',
+      'Add fresh milk and stir until blended.',
+      'Top with espresso; serve hot or over ice.',
+    ],
   },
   {
     id: 3, name: 'Kapeng Barako', category: 'Coffee', is_available: true,
@@ -152,6 +165,12 @@ const SEED_PRODUCTS: SeedProduct[] = [
     recipe: [
       { ingredient: 'Espresso Beans', quantity: 0.025, unit: 'kg' },
       { ingredient: 'Sugar Syrup', quantity: 0.02, unit: 'bottles' },
+    ],
+    preparation: [
+      'Grind barako beans coarsely.',
+      'Brew with hot water for 4 minutes.',
+      'Strain into a cup.',
+      'Sweeten to taste and serve.',
     ],
   },
   {
@@ -166,6 +185,12 @@ const SEED_PRODUCTS: SeedProduct[] = [
       { ingredient: 'Fresh Milk', quantity: 0.15, unit: 'L' },
       { ingredient: 'Tapioca Pearls', quantity: 0.05, unit: 'kg' },
     ],
+    preparation: [
+      'Steep black tea leaves in hot water.',
+      'Add fresh milk and sugar syrup.',
+      'Spoon in cooked tapioca pearls.',
+      'Shake with ice and serve.',
+    ],
   },
   {
     id: 5, name: 'Wintermelon Milk Tea', category: 'Milk Tea', is_available: true,
@@ -178,6 +203,12 @@ const SEED_PRODUCTS: SeedProduct[] = [
       { ingredient: 'Wintermelon Syrup', quantity: 0.05, unit: 'bottles' },
       { ingredient: 'Fresh Milk', quantity: 0.15, unit: 'L' },
       { ingredient: 'Tapioca Pearls', quantity: 0.05, unit: 'kg' },
+    ],
+    preparation: [
+      'Pour wintermelon syrup into a shaker.',
+      'Add fresh milk and ice.',
+      'Shake until frothy.',
+      'Pour over tapioca pearls and serve.',
     ],
   },
   {
@@ -192,6 +223,12 @@ const SEED_PRODUCTS: SeedProduct[] = [
       { ingredient: 'Fresh Milk', quantity: 0.15, unit: 'L' },
       { ingredient: 'Nata de Coco', quantity: 0.05, unit: 'jars' },
     ],
+    preparation: [
+      'Combine Okinawa syrup and fresh milk.',
+      'Add nata de coco to the cup.',
+      'Pour the milk mixture over ice.',
+      'Stir and serve.',
+    ],
   },
   {
     id: 7, name: 'Matcha Milk Tea', category: 'Milk Tea', is_available: true,
@@ -205,6 +242,12 @@ const SEED_PRODUCTS: SeedProduct[] = [
       { ingredient: 'Fresh Milk', quantity: 0.15, unit: 'L' },
       { ingredient: 'Sugar Syrup', quantity: 0.02, unit: 'bottles' },
     ],
+    preparation: [
+      'Whisk matcha powder with warm water.',
+      'Add fresh milk and sugar syrup.',
+      'Stir until evenly green.',
+      'Serve over ice.',
+    ],
   },
   {
     id: 8, name: 'Taro Milk Tea', category: 'Milk Tea', is_available: true,
@@ -217,6 +260,12 @@ const SEED_PRODUCTS: SeedProduct[] = [
       { ingredient: 'Taro Powder', quantity: 0.04, unit: 'kg' },
       { ingredient: 'Fresh Milk', quantity: 0.15, unit: 'L' },
       { ingredient: 'Nata de Coco', quantity: 0.05, unit: 'jars' },
+    ],
+    preparation: [
+      'Dissolve taro powder in a little hot water.',
+      'Add fresh milk and stir well.',
+      'Add nata de coco and ice.',
+      'Stir and serve.',
     ],
   },
   {
@@ -232,6 +281,12 @@ const SEED_PRODUCTS: SeedProduct[] = [
       { ingredient: 'Fresh Milk', quantity: 0.12, unit: 'L' },
       { ingredient: 'Ice', quantity: 1, unit: 'bags' },
     ],
+    preparation: [
+      'Brew espresso and let it cool slightly.',
+      'Blend espresso, milk, ice, and chocolate chips.',
+      'Pour into a tall cup.',
+      'Top with whipped cream and chips.',
+    ],
   },
   {
     id: 10, name: 'Caramel Frappe', category: 'Frappe', is_available: true,
@@ -244,6 +299,12 @@ const SEED_PRODUCTS: SeedProduct[] = [
       { ingredient: 'Espresso Beans', quantity: 0.02, unit: 'kg' },
       { ingredient: 'Caramel Syrup', quantity: 0.05, unit: 'bottles' },
       { ingredient: 'Fresh Milk', quantity: 0.12, unit: 'L' },
+    ],
+    preparation: [
+      'Blend espresso, milk, caramel, and ice.',
+      'Pour into a cup.',
+      'Top with whipped cream.',
+      'Drizzle caramel over the top.',
     ],
   },
   {
@@ -258,18 +319,35 @@ const SEED_PRODUCTS: SeedProduct[] = [
       { ingredient: 'Fresh Milk', quantity: 0.15, unit: 'L' },
       { ingredient: 'Sugar Syrup', quantity: 0.02, unit: 'bottles' },
     ],
+    preparation: [
+      'Blend milk, ice, and crushed cookies.',
+      'Add sugar syrup to taste.',
+      'Pour into a cup.',
+      'Top with cookie crumbs.',
+    ],
   },
   {
     id: 12, name: 'Cheese Pimiento Sandwich', category: 'Others', is_available: true,
     description: 'Toasted white bread with creamy cheese pimiento spread.',
     variants: [{ id: 23, variant_name: 'Solo', price: 65, is_available: true }],
     recipe: [{ ingredient: 'Condensed Milk', quantity: 0.05, unit: 'cans' }],
+    preparation: [
+      'Spread cheese pimiento on white bread.',
+      'Close the sandwich.',
+      'Toast until golden.',
+      'Slice and serve warm.',
+    ],
   },
   {
     id: 13, name: 'Banana Bread Slice', category: 'Others', is_available: true,
     description: 'Moist banana loaf slice, best paired with barako.',
     variants: [{ id: 24, variant_name: 'Slice', price: 55, is_available: true }],
     recipe: [{ ingredient: 'Sugar Syrup', quantity: 0.01, unit: 'bottles' }],
+    preparation: [
+      'Slice the banana loaf.',
+      'Warm briefly if desired.',
+      'Plate and serve.',
+    ],
   },
   {
     id: 14, name: 'Calamansi Juice', category: 'Others', is_available: true,
@@ -281,6 +359,12 @@ const SEED_PRODUCTS: SeedProduct[] = [
     recipe: [
       { ingredient: 'Sugar Syrup', quantity: 0.03, unit: 'bottles' },
       { ingredient: 'Ice', quantity: 1, unit: 'bags' },
+    ],
+    preparation: [
+      'Squeeze fresh calamansi.',
+      'Add sugar syrup and water.',
+      'Pour over ice.',
+      'Stir and serve.',
     ],
   },
 ]
@@ -308,6 +392,7 @@ export function getDemoMenuWithRecipes(): MenuProduct[] {
     is_available: p.is_available,
     variants: p.variants.map((v) => ({ ...v })),
     recipe: p.recipe.map((r) => ({ ...r })),
+    preparation: [...p.preparation],
   }))
 }
 
@@ -530,11 +615,11 @@ export function getDemoExpenses(limit = 100): Expense[] {
 
 export function getDemoProfiles(): StaffProfile[] {
   return [
-    { id: 'demo-owner-1', full_name: 'Gian Baldovino', role: 'owner', is_active: true },
-    { id: 'demo-owner-2', full_name: 'Reziah Calayag', role: 'owner', is_active: true },
-    { id: 'demo-cashier-1', full_name: 'Sean Villangca', role: 'cashier', is_active: true },
-    { id: 'demo-cashier-2', full_name: 'Alex Cruz', role: 'cashier', is_active: true },
-    { id: 'demo-cashier-3', full_name: 'Lenard Montoya', role: 'cashier', is_active: true },
-    { id: 'demo-cashier-4', full_name: 'Maria Santos', role: 'cashier', is_active: true },
+    { id: 'demo-owner-1', full_name: 'Gian Baldovino', email: 'boss_gian@gmail.com', role: 'owner', is_active: true },
+    { id: 'demo-owner-2', full_name: 'Reziah Calayag', email: 'reziah@gmail.com', role: 'owner', is_active: true },
+    { id: 'demo-cashier-1', full_name: 'Sean Villangca', email: 'sean@gmail.com', role: 'cashier', is_active: true },
+    { id: 'demo-cashier-2', full_name: 'Alex Cruz', email: 'alex.cruz@gmail.com', role: 'cashier', is_active: true },
+    { id: 'demo-cashier-3', full_name: 'Lenard Montoya', email: 'leyy@gmail.com', role: 'cashier', is_active: true },
+    { id: 'demo-cashier-4', full_name: 'Maria Santos', email: 'maria.santos@gmail.com', role: 'cashier', is_active: true },
   ]
 }

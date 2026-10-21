@@ -13,7 +13,7 @@ export default async function OrderPage() {
         <CashierPageHeader
           icon={<CupSoda className="size-5" aria-hidden="true" />}
           title="Order"
-          subtitle="Take a customer order. Cash only."
+          subtitle="Take a customer order."
         />
         <p role="alert" className="rounded-2xl bg-red-50 px-4 py-8 text-center text-sm font-semibold text-red-700">
           {error ?? 'Could not load menu.'}
@@ -27,7 +27,7 @@ export default async function OrderPage() {
       <CashierPageHeader
         icon={<CupSoda className="size-5" aria-hidden="true" />}
         title="Order"
-        subtitle="Take a customer order. Cash only."
+        subtitle="Take a customer order."
       />
       <OrderClient
         menu={data.map((v) => ({

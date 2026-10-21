@@ -1,8 +1,9 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { BadgeCheck, QrCode } from "lucide-react";
+import { BadgeCheck } from "lucide-react";
 import { peso } from "@/lib/mock-data";
+import { isDemoModeClient } from "@/lib/demo/client-store";
 import { cn } from "@/lib/utils";
 
 export type PayMethod = "Cash" | "GCash" | "Maya" | "QR Ph";
@@ -146,67 +147,72 @@ export function CashModal({ total, onClose, onConfirm }: {
   );
 }
 
-export function WalletModal({ total, method, onClose, onConfirm }: {
+function WalletBrand({ method }: { method: Exclude<PayMethod, "Cash"> }) {
+  if (method === "GCash") {
+    return (
+      <span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-white text-2xl font-black text-[#0a7cff] ring-1 ring-olive-900/10" aria-hidden="true">
+        G
+      </span>
+    );
+  }
+  return (
+    <span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-black text-sm font-bold text-[#00e07a]" aria-hidden="true">
+      maya
+    </span>
+  );
+}
+
+export function WalletModal({
+  total,
+  method,
+  onClose,
+  onProceed,
+  busy,
+}: {
   total: number;
   method: Exclude<PayMethod, "Cash">;
   onClose: () => void;
-  onConfirm: (ref: string) => void;
+  onProceed: () => void;
+  busy: boolean;
 }) {
-  const [number, setNumber] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const digits = number.replace(/\D/g, "");
-
-  function confirm() {
-    if (!/^09\d{9}$/.test(digits)) {
-      setError(`Enter a valid 11-digit ${method} number (09XX XXX XXXX).`);
-      inputRef.current?.focus();
-      return;
-    }
-    onConfirm(digits);
-  }
-
+  const demo = isDemoModeClient();
   return (
     <ModalShell label={`${method} payment`} onClose={onClose}>
-      <h2 className="text-3xl font-bold text-olive-950">{method} payment</h2>
-      <p className="mt-1 text-stone-600">Scan the QR code or enter the {method} number.</p>
-      <div className="mt-4 grid gap-4 sm:grid-cols-2">
-        <div className="grid place-items-center gap-2 rounded-2xl border border-olive-900/15 bg-white p-5">
-          <span className="grid size-36 place-items-center rounded-xl bg-cream-100 text-olive-700" role="img" aria-label={`${method} QR code placeholder — live code appears when payments are connected`}>
-            <QrCode className="size-20" aria-hidden="true" />
-          </span>
-          <p className="text-sm font-bold text-olive-900">{method}</p>
-          <p className="text-center text-xs text-stone-400">QR connects when payments go live</p>
-        </div>
-        <div className="rounded-2xl border border-olive-900/15 bg-cream-100 p-4">
-          <label htmlFor="wallet-number" className="text-lg font-bold text-olive-950">{method} Number</label>
-          <input
-            ref={inputRef}
-            id="wallet-number"
-            type="tel"
-            inputMode="numeric"
-            autoComplete="tel"
-            value={number}
-            onChange={(e) => { setNumber(e.target.value); setError(null); }}
-            placeholder="09XX XXX XXXX"
-            aria-invalid={error ? true : undefined}
-            aria-describedby={error ? "wallet-error" : undefined}
-            className="mt-1 h-12 w-full rounded-xl border border-olive-900/20 bg-white px-3 text-lg tracking-widest tabular-nums focus-visible:ring-2 focus-visible:ring-olive-500 focus-visible:outline-none"
-          />
-          {error ? (
-            <p id="wallet-error" role="alert" className="mt-2 text-sm font-semibold text-red-700">{error}</p>
-          ) : (
-            <p className="mt-3 rounded-xl bg-white p-3 text-sm text-stone-600">
-              Open your {method} app, scan the QR code or send payment to the number above.
-            </p>
-          )}
+      <div className="flex items-center gap-3">
+        <WalletBrand method={method} />
+        <div>
+          <h2 className="text-3xl font-bold text-olive-950">{method} payment</h2>
+          <p className="text-stone-600">
+            {demo ? 'Prototype checkout — no real charge.' : "You'll be redirected to PayMongo's secure checkout."}
+          </p>
         </div>
       </div>
       <Summary total={total} method={method} />
-      <Actions onClose={onClose} onConfirm={confirm} />
+      <p className="mt-3 rounded-xl bg-cream-100 px-3 py-2 text-center text-[13px] font-semibold text-olive-900">
+        {demo ? 'Demo — order is recorded locally' : 'Secure payment via PayMongo'}
+      </p>
+      <div className="mt-6 flex justify-center gap-8">
+        <button
+          type="button"
+          onClick={onClose}
+          disabled={busy}
+          className="h-11 min-w-36 cursor-pointer rounded-xl border border-olive-800 px-6 font-bold text-olive-900 transition-colors hover:bg-olive-100 focus-visible:ring-2 focus-visible:ring-olive-600 focus-visible:outline-none disabled:opacity-40"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={onProceed}
+          disabled={busy}
+          className="h-11 min-w-40 cursor-pointer rounded-xl bg-olive-800 px-6 font-bold text-cream-50 transition-colors hover:bg-olive-900 focus-visible:ring-2 focus-visible:ring-olive-600 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          {busy ? 'Processing…' : demo ? 'Confirm (demo)' : 'Proceed to PayMongo'}
+        </button>
+      </div>
     </ModalShell>
   );
 }
+
 
 export function SuccessModal({ orderNo, total, method, extra, onClose, onNew }: {
   orderNo: string;

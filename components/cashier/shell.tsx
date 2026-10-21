@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, CupSoda, History, LogOut, Package } from "lucide-react";
+import { Logo, Wordmark } from "@/components/brand/logo";
 import { cn } from "@/lib/utils";
 import { signOut } from "@/lib/auth/actions";
 import { RoleBadge } from "@/components/owner/widgets";
@@ -143,14 +144,7 @@ export function CashierShell({ children, user }: { children: React.ReactNode; us
   return (
     <div className="flex min-h-dvh flex-col bg-olive-500 lg:flex-row">
       <aside className="hidden w-[260px] shrink-0 flex-col px-6 pt-8 pb-5 lg:flex">
-        <Link href="/pos/order" className="flex items-center gap-2.5" aria-label="CuccuPOS cashier home">
-          <span className="grid size-11 shrink-0 place-items-center rounded-full bg-cream-50 font-bold text-olive-800">
-            <CupSoda className="size-6" aria-hidden="true" />
-          </span>
-          <span className="text-[26px] font-bold tracking-tight text-cream-50">
-            Cuccu<span className="text-olive-950">POS</span>
-          </span>
-        </Link>
+        <Logo href="/pos/order" />
         <nav aria-label="Cashier navigation" className="mt-9 flex-1">
           <ul className="flex flex-col gap-1.5">{links}</ul>
         </nav>
@@ -166,9 +160,7 @@ export function CashierShell({ children, user }: { children: React.ReactNode; us
       <div className="flex min-w-0 flex-1 flex-col gap-3 px-3 pt-3 pb-3 lg:px-0 lg:pt-5 lg:pr-5 lg:pb-5">
         <div className="rounded-2xl bg-olive-500 px-4 pt-4 lg:hidden">
           <div className="flex items-center justify-between gap-2 pb-1">
-            <span className="text-lg font-bold tracking-tight text-cream-50">
-              Cuccu<span className="text-olive-950">POS</span>
-            </span>
+            <Wordmark className="text-lg" />
             <CashierAccount user={user} dark />
           </div>
           <nav aria-label="Cashier navigation">

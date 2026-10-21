@@ -11,6 +11,7 @@ import {
   TriangleAlert,
   Users,
 } from "lucide-react";
+import { Logo } from "@/components/brand/logo";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -22,21 +23,6 @@ const NAV = [
   { href: "/reports", label: "Reports", icon: FileText },
   { href: "/users", label: "User/Role Management", icon: Users },
 ];
-
-export function Logo({ compact = false }: { compact?: boolean }) {
-  return (
-    <Link href="/dashboard" className="flex items-center gap-2.5" aria-label="CuccuPOS home">
-      <span className="grid size-11 shrink-0 place-items-center rounded-full bg-cream-50 font-bold text-olive-800">
-        <CupSoda className="size-6" aria-hidden="true" />
-      </span>
-      {!compact && (
-        <span className="text-[26px] font-bold tracking-tight text-cream-50">
-          Cuccu<span className="text-olive-950">POS</span>
-        </span>
-      )}
-    </Link>
-  );
-}
 
 function NavList({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
