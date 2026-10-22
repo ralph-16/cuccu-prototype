@@ -152,12 +152,12 @@ function WalletBrand({ method }: { method: Exclude<PayMethod, "Cash"> }) {
   if (method === "GCash") {
     return (
       // eslint-disable-next-line @next/next/no-img-element
-      <img src="/gcash-logo.svg" alt="GCash" className="h-12 w-auto" />
+      <img src="/logos/gcash-logo.svg" alt="GCash" className="h-12 w-auto" />
     );
   }
   return (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src="/maya-logo.svg" alt="Maya" className="h-12 w-auto" />
+    <img src="/logos/maya-logo.svg" alt="Maya" className="h-12 w-auto" />
   );
 }
 

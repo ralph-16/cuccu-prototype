@@ -79,7 +79,19 @@ export function HistoryTable({ orders }: { orders: OrderRow[] }) {
                 <td className="px-4 py-2.5">{o.items}</td>
                 <td className="px-4 py-2.5">{o.cashier}</td>
                 <td className="px-4 py-2.5">{fmtTime(o.created_at)}</td>
-                <td className="px-4 py-2.5 capitalize">{o.payment_method}</td>
+                <td className="px-4 py-2.5 capitalize">
+                  <span className="inline-flex items-center gap-1.5">
+                    {o.payment_method === 'gcash' ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src="/logos/gcash-logo.svg" alt="" aria-hidden="true" className="h-4 w-auto" />
+                    ) : null}
+                    {o.payment_method === 'maya' ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src="/logos/maya-logo.svg" alt="" aria-hidden="true" className="h-4 w-auto" />
+                    ) : null}
+                    {o.payment_method}
+                  </span>
+                </td>
                 <td className="px-4 py-2.5 font-semibold">{peso(o.total)}</td>
                 <td className="px-4 py-2.5">
                   <span className="inline-flex items-center rounded-md bg-green-700 px-2.5 py-0.5 text-xs font-semibold text-cream-50 capitalize">
