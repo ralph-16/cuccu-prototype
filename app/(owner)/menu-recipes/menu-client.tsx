@@ -179,7 +179,7 @@ function ItemDetailModal({
               {item.description ?? 'No description yet.'}
             </p>
 
-            <dl className="mt-5 grid grid-cols-3 divide-x divide-olive-900/15 rounded-2xl border border-olive-900/15 bg-cream-100 py-3">
+            <dl className="mt-5 grid grid-cols-1 gap-3 rounded-2xl border border-olive-900/15 bg-cream-100 py-3 sm:grid-cols-3 sm:gap-0 sm:divide-x sm:divide-olive-900/15">
               <InfoCell icon={<CupSoda className="size-4" aria-hidden="true" />} label="Category">
                 {item.category_name}
               </InfoCell>
@@ -508,7 +508,7 @@ function AddMenuModal({
                 className="w-full rounded-xl border border-olive-900/20 bg-white px-3 py-2 text-sm text-olive-950 focus-visible:ring-2 focus-visible:ring-olive-500 focus-visible:outline-none"
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
                 <label htmlFor="mi-cat" className="mb-1 block text-[13px] font-semibold text-olive-950">
                   Category

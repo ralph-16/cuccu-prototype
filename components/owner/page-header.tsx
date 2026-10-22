@@ -63,7 +63,7 @@ export async function PageHeader({
           {icon}
         </span>
         <div>
-          <h1 className="text-[26px] leading-8 font-bold text-olive-950">{title}</h1>
+          <h1 className="text-2xl leading-8 font-bold text-olive-950 sm:text-[26px]">{title}</h1>
           <p className="text-sm text-stone-500">{subtitle}</p>
         </div>
       </div>

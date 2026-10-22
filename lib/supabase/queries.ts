@@ -1,5 +1,6 @@
 'use server'
 
+import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { getSessionRole } from '@/lib/auth/role'
 import { toUserError } from '@/lib/supabase/errors'
@@ -231,7 +232,7 @@ export interface Ingredient {
 }
 
 /** Ingredients ledger — any authenticated role can read (RLS USING(true)). */
-export async function getIngredients(): Promise<{ data: Ingredient[] | null; error: string | null }> {
+async function getIngredientsImpl(): Promise<{ data: Ingredient[] | null; error: string | null }> {
   if (isDemoMode()) return { data: getDemoIngredients(), error: null }
   const supabase = await createClient()
   const { data, error } = await supabase
@@ -252,6 +253,8 @@ export async function getIngredients(): Promise<{ data: Ingredient[] | null; err
     error: null,
   }
 }
+
+export const getIngredients = cache(getIngredientsImpl)
 
 export type StockStatus = 'In Stock' | 'Low Stock' | 'Out of Stock'
 
@@ -299,7 +302,7 @@ export interface OrderRow {
 }
 
 /** Recent orders with line counts + cashier name. RLS scopes rows per role. */
-export async function getRecentOrders(
+async function getRecentOrdersImpl(
   limit = 50
 ): Promise<{ data: OrderRow[] | null; error: string | null }> {
   if (isDemoMode()) return { data: getDemoRecentOrders(limit), error: null }
@@ -334,6 +337,8 @@ export async function getRecentOrders(
     error: null,
   }
 }
+
+export const getRecentOrders = cache(getRecentOrdersImpl)
 
 /** Completed-order totals for the annual trend chart (prototype scale). */
 export async function getSalesTrend(): Promise<{ data: Array<{ month: number; total: number }> | null; error: string | null }> {

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { Geist, Geist_Mono, Quicksand } from "next/font/google";
 import "./globals.css";
@@ -24,6 +24,12 @@ export const metadata: Metadata = {
   title: "CuccuPOS — Café POS & Management",
   description: "CuccuPOS — point-of-sale and shop management for Cuccu Café.",
   icons: { icon: "/cuccupos-logo.svg", apple: "/cuccupos-logo.svg" },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

@@ -149,7 +149,6 @@ export function CashierShell({ children, user }: { children: React.ReactNode; us
           <ul className="flex flex-col gap-1.5">{links}</ul>
         </nav>
         <div className="flex flex-col gap-2">
-          <CashierAccount user={user} dark drop="up" />
           <p className="flex items-center gap-1.5 text-sm font-medium text-cream-50/90">
             <span className="size-1.5 rounded-full bg-green-300" aria-hidden="true" />
             CucuPos v1.0

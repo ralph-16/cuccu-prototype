@@ -173,6 +173,24 @@ export async function completeWalletOrder(orderId: number): Promise<{ error: str
   return { error: null }
 }
 
+/** Returns the current status of a wallet order (used for polling). */
+export async function getWalletOrderStatus(orderId: number): Promise<{ status: string | null; error: string | null }> {
+  if (isDemoMode()) {
+    // Demo orders are tracked client-side; report pending until confirmed.
+    return { status: 'pending', error: null }
+  }
+  const session = await getSessionRole()
+  if (!session) return { status: null, error: 'Not authenticated.' }
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('orders')
+    .select('order_status')
+    .eq('id', orderId)
+    .maybeSingle()
+  if (error) return { status: null, error: toUserError(error) }
+  return { status: (data as { order_status?: string } | null)?.order_status ?? null, error: null }
+}
+
 /** Cancels a pending wallet order (e.g. customer aborted on PayMongo). */
 export async function cancelWalletOrder(orderId: number): Promise<{ error: string | null }> {
   if (isDemoMode()) return { error: null }

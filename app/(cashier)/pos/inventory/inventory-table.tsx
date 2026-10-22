@@ -11,14 +11,6 @@ export interface StockRow {
   stock: number
   unit: string
   status: 'In Stock' | 'Low Stock' | 'Out of Stock'
-}
-
-export interface StockRow {
-  id: number
-  name: string
-  stock: number
-  unit: string
-  status: 'In Stock' | 'Low Stock' | 'Out of Stock'
   reorderAt?: number
 }
 

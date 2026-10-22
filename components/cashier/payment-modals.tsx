@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { BadgeCheck } from "lucide-react";
 import { peso } from "@/lib/mock-data";
-import { startWalletPayment } from "@/lib/paymongo";
+import { getWalletOrderStatus, startWalletPayment } from "@/lib/paymongo";
 import { isDemoModeClient } from "@/lib/demo/client-store";
 import { cn } from "@/lib/utils";
 
@@ -183,6 +183,9 @@ export function WalletModal({
     | { status: "error"; message: string }
   >({ status: "loading" });
   const [busy, setBusy] = useState(false);
+  const [orderStatus, setOrderStatus] = useState<string | null>(null);
+  const [verifying, setVerifying] = useState(false);
+  const finalizedRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -207,6 +210,42 @@ export function WalletModal({
       cancelled = true;
     };
   }, [method, items]);
+
+  // Poll the order status so the modal can auto-complete when the webhook
+  // (or the PayMongo redirect) marks the pending order as completed.
+  useEffect(() => {
+    if (demo || state.status !== "ready" || !state.orderId) return;
+    let cancelled = false;
+    const check = async () => {
+      setVerifying(true);
+      const r = await getWalletOrderStatus(state.orderId!);
+      if (cancelled) return;
+      setVerifying(false);
+      if (r.status) setOrderStatus(r.status);
+      if (r.status === "completed" && !finalizedRef.current) {
+        finalizedRef.current = true;
+        await onConfirm(state.orderId);
+      }
+    };
+    check();
+    const id = setInterval(check, 3000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [demo, state, onConfirm]);
+
+  async function manualCheck() {
+    if (state.status !== "ready" || !state.orderId) return;
+    setVerifying(true);
+    const r = await getWalletOrderStatus(state.orderId);
+    setVerifying(false);
+    if (r.status) setOrderStatus(r.status);
+    if (r.status === "completed" && !finalizedRef.current) {
+      finalizedRef.current = true;
+      await onConfirm(state.orderId);
+    }
+  }
 
   async function handleConfirm() {
     const orderId = state.status === "ready" ? state.orderId : null;
@@ -263,8 +302,6 @@ export function WalletModal({
               Scan with your {method} app · or{" "}
               <a
                 href={state.checkoutUrl}
-                target="_blank"
-                rel="noopener noreferrer"
                 className="font-semibold text-olive-700 underline-offset-2 hover:underline"
               >
                 open PayMongo checkout
@@ -274,6 +311,28 @@ export function WalletModal({
           <p className="mt-3 rounded-xl bg-cream-100 px-3 py-2 text-center text-[13px] font-semibold text-olive-900">
             {demo ? "Demo — order recorded locally after you confirm" : "Secure payment via PayMongo"}
           </p>
+          {!demo && state.status === "ready" ? (
+            <div className="mt-3 flex flex-col items-center gap-2">
+              <p className="text-sm font-semibold text-olive-950" role="status" aria-live="polite">
+                Payment status:{" "}
+                <span className={orderStatus === "completed" ? "text-green-700" : "text-yellow-700"}>
+                  {orderStatus ?? "pending"}
+                </span>
+                {verifying ? " (checking…)" : ""}
+              </p>
+              <button
+                type="button"
+                onClick={manualCheck}
+                disabled={verifying}
+                className="h-9 cursor-pointer rounded-lg border border-olive-800 px-4 text-xs font-bold text-olive-900 transition-colors hover:bg-olive-100 focus-visible:ring-2 focus-visible:ring-olive-600 focus-visible:outline-none disabled:opacity-40"
+              >
+                Check payment status
+              </button>
+              <p className="text-xs text-stone-500">
+                Complete payment in the PayMongo tab; this will update automatically.
+              </p>
+            </div>
+          ) : null}
         </>
       )}
 

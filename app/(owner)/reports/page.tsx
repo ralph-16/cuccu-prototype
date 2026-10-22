@@ -98,7 +98,7 @@ export default async function ReportsPage({
         ) : null}
       </form>
 
-      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {cards.map((c) => (
           <div key={c.label} className="rounded-2xl border border-olive-900/10 bg-white p-4 text-center">
             <p className="text-[13px] font-semibold text-stone-500">{c.label}</p>

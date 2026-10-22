@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { DEMO_COOKIE, isDemoMode } from '@/lib/demo/config'
 import { DEMO_CASHIER, DEMO_OWNER } from '@/lib/demo/data'
@@ -13,7 +14,7 @@ export type AppRole = 'owner' | 'cashier'
  * demo cookie session wins so the app works with no backend. Backend code
  * is untouched — set NEXT_PUBLIC_DEMO_MODE=false to use Supabase Auth.
  */
-export async function getSessionRole(): Promise<
+async function getSessionRoleImpl(): Promise<
   { userId: string; email: string | undefined; role: AppRole; fullName: string } | null
 > {
   if (isDemoMode()) {
@@ -70,3 +71,5 @@ export async function getSessionRole(): Promise<
     fullName: row.full_name ?? user.email ?? 'Staff',
   }
 }
+
+export const getSessionRole = cache(getSessionRoleImpl)

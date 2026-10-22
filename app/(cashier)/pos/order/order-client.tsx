@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { CupSoda, Minus, Plus, Search, Trash2 } from 'lucide-react'
 import { CashModal, SuccessModal, WalletModal, type PayMethod } from '@/components/cashier/payment-modals'
@@ -29,6 +29,7 @@ export function OrderClient({ menu }: { menu: PosMenuItem[] }) {
   const [placing, setPlacing] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [lastOrder, setLastOrder] = useState<{ no: string; total: number; extra: string; method: PayMethod } | null>(null)
+  const walletFinalizedRef = useRef(false)
 
   const categories = useMemo(() => ['All', ...Array.from(new Set(menu.map((m) => m.category)))], [menu])
 
@@ -119,24 +120,51 @@ export function OrderClient({ menu }: { menu: PosMenuItem[] }) {
   }
 
   async function handleWalletConfirm(orderId: number | null) {
+    if (walletFinalizedRef.current) return
+    walletFinalizedRef.current = true
+    setFormError(null)
+
     if (isDemoModeClient()) {
       const itemCount = lines.reduce((s, l) => s + l.qty, 0)
       try {
-        addDemoOrder({
+        const row = addDemoOrder({
           items: itemCount,
           cashier: getDemoCashierName(),
           payment_method: method.toLowerCase(),
           total,
         })
+        setLastOrder({
+          no: String(row.id),
+          total,
+          method,
+          extra: `${method} · demo — no real charge`,
+        })
       } catch {
-        // ignore
+        setFormError('Could not save the demo order.')
+        walletFinalizedRef.current = false
+        return
       }
     } else if (orderId != null) {
       const r = await completeWalletOrder(orderId)
-      if (r.error) setFormError(r.error)
+      if (r.error) {
+        setFormError(r.error)
+        walletFinalizedRef.current = false
+        return
+      }
+      setLastOrder({
+        no: String(orderId),
+        total,
+        method,
+        extra: `${method} · PayMongo payment received`,
+      })
+    } else {
+      setFormError('No order reference returned.')
+      walletFinalizedRef.current = false
+      return
     }
-    const detail = `${method} · ${isDemoModeClient() ? "demo — no real charge" : "PayMongo payment received"}`
-    await completeOrder(method, detail)
+
+    setCart({})
+    setModal('done')
   }
 
   async function handleWalletCancel(orderId: number | null) {
@@ -299,7 +327,7 @@ export function OrderClient({ menu }: { menu: PosMenuItem[] }) {
           <button
             type="button"
             disabled={lines.length === 0 || placing}
-            onClick={() => setModal('pay')}
+            onClick={() => { walletFinalizedRef.current = false; setModal('pay') }}
             className="mt-4 h-12 cursor-pointer rounded-xl bg-olive-700 text-[15px] font-bold text-cream-50 transition-colors hover:bg-olive-800 focus-visible:ring-2 focus-visible:ring-olive-600 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
           >
             {placing ? 'Placing order…' : 'Confirm & Send to Kitchen'}

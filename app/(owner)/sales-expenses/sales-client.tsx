@@ -149,7 +149,7 @@ export function SalesExpensesClient({
                 <option>Other</option>
               </select>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
                 <label htmlFor="exp-amt" className="mb-1 block text-[13px] font-semibold text-olive-950">Amount (₱)</label>
                 <input id="exp-amt" name="amount" type="number" min="0.01" step="0.01" required inputMode="decimal" className={inputClass} />
@@ -166,7 +166,7 @@ export function SalesExpensesClient({
                 </div>
               </fieldset>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
                 <label htmlFor="exp-freq" className="mb-1 block text-[13px] font-semibold text-olive-950">Frequency</label>
                 <select id="exp-freq" name="frequency" className={`${inputClass} cursor-pointer`} defaultValue="One-Time">

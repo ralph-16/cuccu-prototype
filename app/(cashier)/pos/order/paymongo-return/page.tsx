@@ -3,6 +3,7 @@ import { CheckCircle2, CupSoda, XCircle } from "lucide-react";
 import { CashierPageHeader } from "@/components/cashier/page-header";
 import { Panel } from "@/components/owner/widgets";
 import { completeWalletOrder, cancelWalletOrder } from "@/lib/paymongo";
+import { AutoRedirect } from "@/components/cashier/auto-redirect";
 
 /**
  * Return target for PayMongo hosted checkout. Completes (or cancels) the
@@ -33,6 +34,7 @@ export default async function PaymongoReturnPage({
             : "No order reference returned."
         }
       />
+      <AutoRedirect to="/pos/order" delay={3000} />
       <Panel className="flex flex-col items-center gap-4 p-8 text-center">
         {ok ? (
           <CheckCircle2 className="size-16 text-olive-700" aria-hidden="true" />
@@ -43,6 +45,9 @@ export default async function PaymongoReturnPage({
           {ok
             ? "Payment confirmed. The order is complete and inventory has been updated."
             : "The payment was cancelled. The order has been marked cancelled."}
+        </p>
+        <p className="text-sm text-stone-500">
+          Returning to the POS in a few seconds… (or use the buttons below)
         </p>
         <div className="flex flex-wrap justify-center gap-4">
           <Link
